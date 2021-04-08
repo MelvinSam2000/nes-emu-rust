@@ -24,7 +24,9 @@ impl BusCpu {
         };
     }
 
-    pub fn read(&self, addr: u16, read_only: bool) -> u8 {
+    pub fn read(&self, addr: u16) -> u8 {
+
+        /*
         if ADDR_SPACE_RAM.contains(&addr) {
             print!("Reading from RAM");
             return self.ram.read(addr);
@@ -35,10 +37,13 @@ impl BusCpu {
         } else if ADDR_SPACE_CART_PRG.contains(&addr) {
             print!("Reading from PROG ROM");
         }
-        return 0x00;
+        */
+
+        return self.ram.read(addr);
     }
 
     pub fn write(&mut self, addr: u16, data: u8) {
+        /*
         if ADDR_SPACE_RAM.contains(&addr) {
             print!("Writing to RAM");
             self.ram.write(addr, data);
@@ -49,5 +54,7 @@ impl BusCpu {
         } else if ADDR_SPACE_CART_PRG.contains(&addr) {
             print!("Writing to PROG ROM");
         }
+        */
+        self.ram.write(addr, data);
     }
 }

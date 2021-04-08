@@ -1,4 +1,4 @@
-use crate::cpu::Cpu;
+use crate::cpu::cpu::Cpu;
 use crate::buscpu::BusCpu;
 use crate::ram::Ram;
 use crate::cartprg::CartPrg;
