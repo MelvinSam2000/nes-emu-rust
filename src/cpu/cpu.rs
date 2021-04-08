@@ -17,6 +17,7 @@ pub struct Cpu {
     pub cycles: u8,
     pub addr_abs: u16,
     pub addr_rel: u16,
+    pub addr_mode: usize,
     pub data: u8,
 }
 
@@ -75,16 +76,16 @@ impl Cpu {
         let decoded = Cpu::decode(opcode);
         self.cycles = decoded.cycles;
         // execute
+        self.addr_mode = decoded.addr_mode as usize;
         (decoded.addr_mode)(self);
         (decoded.instruction)(self);
     }
 
     pub fn irq(&mut self) {
-
+        
         if self.get_flag(CpuFlag::I) {
             return;
         }
-        
         self.write(self.sp as u16 + 0x100, ((self.pc >> 8) & 0x00ff) as u8);
         self.sp -= 1;
         self.write(self.sp as u16 + 0x100, self.pc as u8);

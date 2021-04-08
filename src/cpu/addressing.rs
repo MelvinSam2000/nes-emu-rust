@@ -1,5 +1,6 @@
 use crate::cpu::cpu::Cpu;
 
+#[allow(non_snake_case)]
 impl Cpu {
 
     pub fn ABS(&mut self) {

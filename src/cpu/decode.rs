@@ -1,6 +1,4 @@
 use crate::cpu::cpu::Cpu;
-use crate::cpu::addressing::*;
-use crate::cpu::instructions::*;
 
 pub struct DecodedOpcode {
     pub cycles: u8,

@@ -16,4 +16,7 @@ fn main() {
 
     let mut nes = Nes::new();
     nes.reset();
+    loop {
+        nes.clock();
+    }
 }
