@@ -288,7 +288,7 @@ impl Cpu {
     }
 
     pub fn ROL(&mut self) {
-        let tmp = (self.data as u16) << 1;
+        let mut tmp = (self.data as u16) << 1;
         if self.get_flag(CpuFlag::C) {
             tmp |= 0x0001;
         }
@@ -305,7 +305,7 @@ impl Cpu {
     }
 
     pub fn ROR(&mut self) {
-        let tmp = (self.data as u16) >> 1;
+        let mut tmp = (self.data as u16) >> 1;
         if self.get_flag(CpuFlag::C) {
             tmp |= 0x0080;
         }

@@ -47,6 +47,7 @@ impl Cpu {
             cycles: 0,
             addr_abs: 0x0000,
             addr_rel: 0x0000,
+            addr_mode: 0x0000,
             data: 0x00,
         }
     }
