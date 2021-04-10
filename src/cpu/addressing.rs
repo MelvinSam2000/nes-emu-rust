@@ -10,19 +10,19 @@ impl Cpu {
 
     pub fn ABX(&mut self) {
         self.ABS();
-        self.addr_abs += self.x as u16;
+        self.addr_abs += self.addr_abs.wrapping_add(self.x as u16);
         self.data = self.read(self.addr_abs);
     }
 
     pub fn ABY(&mut self) {
         self.ABS();
-        self.addr_abs += self.y as u16;
+        self.addr_abs = self.addr_abs.wrapping_add(self.y as u16);
         self.data = self.read(self.addr_abs);
     }
 
     pub fn IMM(&mut self) {
         self.addr_abs = self.pc;
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
         self.data = self.read(self.addr_abs);
     }
 
@@ -40,16 +40,16 @@ impl Cpu {
 
     pub fn IDX(&mut self) {
         let ptr = self.pc_fetch_byte() as u16;
-        let lo = self.read((ptr + self.x as u16) & 0x00ff) as u16;
-        let hi = self.read((ptr + self.x as u16 + 1) & 0x00ff) as u16;
+        let lo = self.read(ptr.wrapping_add(self.x as u16).wrapping_add(1) & 0x00ff) as u16;
+        let hi = self.read(ptr.wrapping_add(self.x as u16).wrapping_add(1) & 0x00ff) as u16;
         self.addr_abs = (hi << 8) | lo;
         self.data = self.read(self.addr_abs);
     }
 
     pub fn IDY(&mut self) {
         let ptr = self.pc_fetch_byte() as u16;
-        let lo = self.read((ptr + self.y as u16) & 0x00ff) as u16;
-        let hi = self.read((ptr + self.y as u16 + 1) & 0x00ff) as u16;
+        let lo = self.read(ptr.wrapping_add(self.y as u16).wrapping_add(1) & 0x00ff) as u16;
+        let hi = self.read(ptr.wrapping_add(self.y as u16).wrapping_add(1) & 0x00ff) as u16;
         self.addr_abs = (hi << 8) | lo;
         self.data = self.read(self.addr_abs);
     }

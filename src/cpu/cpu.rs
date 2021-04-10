@@ -1,9 +1,10 @@
-use crate::buscpu::*;
 use crate::cpu::decode::*;
+use crate::mem::mem::Mem;
+use crate::mem::buscpu::*;
 
 pub struct Cpu {
     // devices
-    pub bus: BusCpu,
+    pub bus: Box<dyn Mem>,
     
     // registers
     pub pc: u16,
@@ -25,7 +26,7 @@ pub enum CpuFlag {
     C = (1 << 0),	// Carry Bit
     Z = (1 << 1),	// Zero
     I = (1 << 2),	// Disable Interrupts
-    D = (1 << 3),	// Decimal Mode
+    D = (1 << 3),	// Decimal Mode (not used)
     B = (1 << 4),	// Break
     U = (1 << 5),	// Unused
     V = (1 << 6),	// Overflow
@@ -33,7 +34,7 @@ pub enum CpuFlag {
 }
 
 impl Cpu {
-    pub fn new(bus: BusCpu) -> Self {
+    pub fn new(bus: Box<dyn Mem>) -> Self {
         return Self {
             bus,
             
@@ -51,7 +52,6 @@ impl Cpu {
             data: 0x00,
         }
     }
-
     // EXTERNAL METHODS
 
     pub fn reset(&mut self) {

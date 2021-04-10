@@ -1,13 +1,13 @@
 use std::ops::Range;
 
-use crate::ram::Ram;
 use crate::cartprg::CartPrg;
 use crate::ppu::Ppu;
+use crate::mem::mem::Mem;
 
 pub struct BusCpu {
-    ram: Ram,
-    cartprg: CartPrg,
-    ppu: Ppu
+    pub ram: [u8; 0x2000],
+    pub cartprg: CartPrg,
+    pub ppu: Ppu
 }
 
 const ADDR_SPACE_RAM: Range<u16> = 0x0000..0x2000;
@@ -17,44 +17,39 @@ const ADDR_SPACE_CART_PRG: Range<u16> = 0x4020..0xffff;
 
 
 impl BusCpu {
-
-    pub fn new(ram: Ram, cartprg: CartPrg, ppu: Ppu) -> Self {
+    
+    pub fn new(cartprg: CartPrg, ppu: Ppu) -> Self {
         return Self {
-            ram, cartprg, ppu
+            ram: [0; 0x2000], cartprg, ppu
         };
     }
+}
 
-    pub fn read(&self, addr: u16) -> u8 {
+impl Mem for BusCpu {
 
-        /*
+    fn read(&self, addr: u16) -> u8 {
+
         if ADDR_SPACE_RAM.contains(&addr) {
-            print!("Reading from RAM");
-            return self.ram.read(addr);
+            return self.ram[addr as usize];
         } else if ADDR_SPACE_PPU.contains(&addr) {
             print!("Reading from PPU");
         } else if ADDR_SPACE_APU_IO.contains(&addr) {
             print!("Reading from APU/IO");
         } else if ADDR_SPACE_CART_PRG.contains(&addr) {
-            print!("Reading from PROG ROM");
+            return self.cartprg.read(addr);
         }
-        */
-
-        return self.ram.read(addr);
+        return self.ram[addr as usize];
     }
 
-    pub fn write(&mut self, addr: u16, data: u8) {
-        /*
+    fn write(&mut self, addr: u16, data: u8) {
         if ADDR_SPACE_RAM.contains(&addr) {
-            print!("Writing to RAM");
-            self.ram.write(addr, data);
+            self.ram[addr as usize] = data;
         } else if ADDR_SPACE_PPU.contains(&addr) {
-            print!("Writing to PPU");
+            print!("Reading from PPU");
         } else if ADDR_SPACE_APU_IO.contains(&addr) {
-            print!("Writing to APU/IO");
+            print!("Reading from APU/IO");
         } else if ADDR_SPACE_CART_PRG.contains(&addr) {
-            print!("Writing to PROG ROM");
+            self.cartprg.write(addr, data);
         }
-        */
-        self.ram.write(addr, data);
     }
 }
