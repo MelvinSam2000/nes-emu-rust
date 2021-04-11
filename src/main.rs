@@ -12,8 +12,8 @@ mod mappers {
 mod tests {
     pub mod cputest;
 }
+mod cartridge;
 mod buscpu;
-mod cartprg;
 mod ppu;
 
 use nes::Nes;

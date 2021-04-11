@@ -102,4 +102,15 @@ mod cputest {
         }
         assert_eq!(nes.cpu.ac, 0x01);
     }
+
+    #[test]
+    pub fn test_final_nes() {
+        let mut nes = Nes::new();
+        nes.load("games/nestest.nes".to_string());
+        nes.reset();
+        for _i in 0..1000 {
+            nes.clock();
+        }
+        assert_eq!(1, 1);
+    }
 }

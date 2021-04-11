@@ -2,16 +2,15 @@ use std::fs::read;
 
 use crate::cpu::cpu::Cpu;
 use crate::cpu::cpu;
-use crate::buscpu::BusCpu;
-use crate::cartprg::CartPrg;
 use crate::ppu::Ppu;
-use crate::mappers::mapper::Mapper;
+use crate::buscpu::BusCpu;
+use crate::cartridge::Cartridge;
 
 pub struct Nes {
     // devices
     pub cpu: Cpu,
     pub ppu: Ppu,
-    pub cartprg: CartPrg,
+    pub cartridge: Cartridge,
     pub buscpu: BusCpu,
 }
 
@@ -22,13 +21,13 @@ impl Nes {
     pub fn new() -> Self {
         
         // Create devices
-        let cartprg = CartPrg::new();
+        let cartridge = Cartridge::new();
         let ppu = Ppu::new();
         let buscpu = BusCpu::new();
         let cpu = Cpu::new();
 
         return Self {
-            cpu, ppu, cartprg, buscpu
+            cpu, ppu, cartridge, buscpu
         };
     }
 
@@ -45,26 +44,30 @@ impl Nes {
             Err(_e) => vec![],
             Ok(v) => v
         };
-
         // read file header
         let prg_banks = file_bytes[0x4] as usize;
         let chr_banks = file_bytes[0x5] as usize;
         let trainer_is_present = file_bytes[0x6] & 0x04 != 0;
-
-        // resize memories
         let prg_size = 0x4000*prg_banks;
         let chr_size = 0x2000*chr_banks;
-        //self.cpu.bus.cartprg.resize(prg_size);
+
+        // resize cartridge roms
+        self.cartridge.prg_banks = prg_banks as u8;
+        self.cartridge.chr_banks = chr_banks as u8;
+        self.cartridge.prgmem.resize(prg_size, 0);
+        self.cartridge.chrmem.resize(chr_size, 0);
 
         // fill memories
         let mut offset = 16;
         if trainer_is_present {
             offset += 512;
         }
-        //for i in 0..prg_size as u16 {
-        //    self.cpu.bus.cartprg.mem[i as usize] = file_bytes[(offset + i) as usize];
-        //}
-
+        for i in 0..prg_size as u16 {
+            self.cartridge.prgmem[i as usize] = file_bytes[(offset + i) as usize];
+        }
+        for i in 0..chr_size as u16 {
+            self.cartridge.chrmem[i as usize] = file_bytes[(prg_size as u16 + offset + i) as usize];
+        }
     }
 
     pub fn load_debug(&mut self, prg: Vec<u8>) {
