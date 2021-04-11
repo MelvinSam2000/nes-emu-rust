@@ -1,13 +1,18 @@
 use std::fs::read;
 
 use crate::cpu::cpu::Cpu;
-use crate::mem::buscpu::BusCpu;
+use crate::cpu::cpu;
+use crate::buscpu::BusCpu;
 use crate::cartprg::CartPrg;
 use crate::ppu::Ppu;
 use crate::mappers::mapper::Mapper;
 
 pub struct Nes {
-    cpu: Cpu
+    // devices
+    pub cpu: Cpu,
+    pub ppu: Ppu,
+    pub cartprg: CartPrg,
+    pub buscpu: BusCpu,
 }
 
 impl Nes {
@@ -19,25 +24,25 @@ impl Nes {
         // Create devices
         let cartprg = CartPrg::new();
         let ppu = Ppu::new();
-        let buscpu = BusCpu::new(cartprg, ppu);
-        let cpu = Cpu::new(Box::new(buscpu));
+        let buscpu = BusCpu::new();
+        let cpu = Cpu::new();
 
         return Self {
-            cpu
+            cpu, ppu, cartprg, buscpu
         };
     }
 
     pub fn reset(&mut self) {
-        self.cpu.reset();
+        cpu::reset(self);
     }
 
     pub fn clock(&mut self) {
-        self.cpu.clock();
+        cpu::clock(self);
     }
 
     pub fn load(&mut self, nes_file_path: String) {
         let file_bytes: Vec<u8> = match read(nes_file_path) {
-            Err(e) => vec![],
+            Err(_e) => vec![],
             Ok(v) => v
         };
 
@@ -60,6 +65,12 @@ impl Nes {
         //    self.cpu.bus.cartprg.mem[i as usize] = file_bytes[(offset + i) as usize];
         //}
 
+    }
+
+    pub fn load_debug(&mut self, prg: Vec<u8>) {
+        self.cpu.debug = true;
+        self.cpu.debug_ram = prg;
+        self.cpu.debug_ram.resize(0x10000, 0);
     }
 
 }

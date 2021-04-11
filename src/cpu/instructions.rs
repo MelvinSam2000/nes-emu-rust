@@ -1,418 +1,417 @@
-use crate::cpu::cpu::*;
+use crate::nes::Nes;
+use crate::cpu::cpu;
+use crate::cpu::cpu::CpuFlag;
+use crate::cpu::addressing;
 
-#[allow(non_snake_case)]
-impl Cpu {
+pub fn adc(nes: &mut Nes) {
 
-    pub fn ADC(&mut self) {
+    let mut temp: u16 = nes.cpu.ac.wrapping_add(nes.cpu.data) as u16;
+    temp = temp.wrapping_add(cpu::get_flag(nes, CpuFlag::C) as u16);
 
-        let mut temp: u16 = self.ac.wrapping_add(self.data) as u16;
-        temp = temp.wrapping_add(self.get_flag(CpuFlag::C) as u16);
-	
-        self.set_flag(CpuFlag::C, temp > 255);
-        self.set_flag(CpuFlag::Z, (temp & 0x00ff) == 0);
-        self.set_flag(CpuFlag::V, (!(self.ac as u16 ^ self.data as u16) & (self.ac as u16 ^ temp)) & 0x0080 != 0);
-        self.set_flag(CpuFlag::N, temp & 0x80 != 0);
-        
-        self.ac = temp as u8;
-        self.cycles += 1;
+    cpu::set_flag(nes, CpuFlag::C, temp > 255);
+    cpu::set_flag(nes, CpuFlag::Z, (temp & 0x00ff) == 0);
+    cpu::set_flag(nes, CpuFlag::V, (!(nes.cpu.ac as u16 ^ nes.cpu.data as u16) & (nes.cpu.ac as u16 ^ temp)) & 0x0080 != 0);
+    cpu::set_flag(nes, CpuFlag::N, temp & 0x80 != 0);
+    
+    nes.cpu.ac = temp as u8;
+    nes.cpu.cycles += 1;
+}
+
+pub fn and(nes: &mut Nes) {
+    nes.cpu.ac &= nes.cpu.data;
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.ac == 0x00);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.ac & 0x80 != 0);
+}
+
+pub fn asl(nes: &mut Nes) {
+    let tmp = (nes.cpu.data as u16) << 1;
+    
+    cpu::set_flag(nes, CpuFlag::C, tmp & 0xff00 > 0);
+    cpu::set_flag(nes, CpuFlag::Z, tmp & 0xff00 == 0);
+    cpu::set_flag(nes, CpuFlag::N, tmp & 0x0080 != 0);
+
+    if nes.cpu.addr_mode == addressing::imp as usize {
+        nes.cpu.ac = tmp as u8;
+    } else {
+        cpu::write(nes, nes.cpu.addr_abs, tmp as u8);
     }
+}
 
-    pub fn AND(&mut self) {
-        self.ac &= self.data;
-        self.set_flag(CpuFlag::Z, self.ac == 0x00);
-        self.set_flag(CpuFlag::N, self.ac & 0x80 != 0);
+pub fn bcc(nes: &mut Nes) {
+    if !cpu::get_flag(nes, CpuFlag::C) {
+        nes.cpu.cycles += 1;
+        let addr = nes.cpu.pc + nes.cpu.addr_rel;
+        nes.cpu.pc = addr;
     }
+}
 
-    pub fn ASL(&mut self) {
-        let tmp = (self.data as u16) << 1;
-        
-        self.set_flag(CpuFlag::C, tmp & 0xff00 > 0);
-        self.set_flag(CpuFlag::Z, tmp & 0xff00 == 0);
-        self.set_flag(CpuFlag::N, tmp & 0x0080 != 0);
-
-        if self.addr_mode == Cpu::IMP as usize {
-            self.ac = tmp as u8;
-        } else {
-            self.write(self.addr_abs, tmp as u8);
-        }
+pub fn bcs(nes: &mut Nes) {
+    if cpu::get_flag(nes, CpuFlag::C) {
+        nes.cpu.cycles += 1;
+        let addr = nes.cpu.pc + nes.cpu.addr_rel;
+        nes.cpu.pc = addr;
     }
+}
 
-    pub fn BCC(&mut self) {
-        if !self.get_flag(CpuFlag::C) {
-            self.cycles += 1;
-            let addr = self.pc + self.addr_rel;
-            self.pc = addr;
-        }
+pub fn beq(nes: &mut Nes) {
+    if cpu::get_flag(nes, CpuFlag::Z) {
+        nes.cpu.cycles += 1;
+        let addr = nes.cpu.pc + nes.cpu.addr_rel;
+        nes.cpu.pc = addr;
     }
+}
 
-    pub fn BCS(&mut self) {
-        if self.get_flag(CpuFlag::C) {
-            self.cycles += 1;
-            let addr = self.pc + self.addr_rel;
-            self.pc = addr;
-        }
+pub fn bit(nes: &mut Nes) {
+    let tmp = nes.cpu.ac & nes.cpu.data;
+    cpu::set_flag(nes, CpuFlag::Z, tmp & 0x00ff == 0x00);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.data & (1 << 7) != 0);
+    cpu::set_flag(nes, CpuFlag::V, nes.cpu.data & (1 << 6) != 0);
+}
+
+pub fn bmi(nes: &mut Nes) {
+    if cpu::get_flag(nes, CpuFlag::N) {
+        nes.cpu.cycles += 1;
+        let addr = nes.cpu.pc.wrapping_add(nes.cpu.addr_rel);
+        nes.cpu.pc = addr;
     }
+}
 
-    pub fn BEQ(&mut self) {
-        if self.get_flag(CpuFlag::Z) {
-            self.cycles += 1;
-            let addr = self.pc + self.addr_rel;
-            self.pc = addr;
-        }
+pub fn bne(nes: &mut Nes) {
+    if !cpu::get_flag(nes, CpuFlag::Z) {
+        nes.cpu.cycles += 1;
+        let addr = nes.cpu.pc.wrapping_add(nes.cpu.addr_rel);
+        nes.cpu.pc = addr;
     }
+}
 
-    pub fn BIT(&mut self) {
-        let tmp = self.ac & self.data;
-        self.set_flag(CpuFlag::Z, tmp & 0x00ff == 0x00);
-        self.set_flag(CpuFlag::N, self.data & (1 << 7) != 0);
-        self.set_flag(CpuFlag::V, self.data & (1 << 6) != 0);
+pub fn bpl(nes: &mut Nes) {
+    if !cpu::get_flag(nes, CpuFlag::N) {
+        nes.cpu.cycles += 1;
+        let addr = nes.cpu.pc.wrapping_add(nes.cpu.addr_rel);
+        nes.cpu.pc = addr;
     }
+}
 
-    pub fn BMI(&mut self) {
-        if self.get_flag(CpuFlag::N) {
-            self.cycles += 1;
-            let addr = self.pc.wrapping_add(self.addr_rel);
-            self.pc = addr;
-        }
+pub fn brk(nes: &mut Nes) {
+    nes.cpu.pc = nes.cpu.pc.wrapping_add(1);
+
+    cpu::set_flag(nes, CpuFlag::I, true);
+    cpu::write(nes, 0x0100 + nes.cpu.sp as u16, (nes.cpu.pc >> 8) as u8);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
+    cpu::write(nes, 0x0100 + nes.cpu.sp as u16, nes.cpu.pc as u8);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
+
+    cpu::set_flag(nes, CpuFlag::B, true);
+    cpu::write(nes, 0x0100 + nes.cpu.sp as u16, nes.cpu.status);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
+    cpu::set_flag(nes, CpuFlag::B, false);
+
+    nes.cpu.pc = cpu::read(nes, 0xfffe) as u16 | ((cpu::read(nes, 0xffff) as u16) << 8);
+}
+
+pub fn bvc(nes: &mut Nes) {
+    if !cpu::get_flag(nes, CpuFlag::V) {
+        nes.cpu.cycles += 1;
+        let addr = nes.cpu.pc.wrapping_add(nes.cpu.addr_rel);
+        nes.cpu.pc = addr;
     }
+}
 
-    pub fn BNE(&mut self) {
-        if !self.get_flag(CpuFlag::Z) {
-            self.cycles += 1;
-            let addr = self.pc.wrapping_add(self.addr_rel);
-            self.pc = addr;
-        }
+pub fn bvs(nes: &mut Nes) {
+    if cpu::get_flag(nes, CpuFlag::V) {
+        nes.cpu.cycles += 1;
+        let addr = nes.cpu.pc.wrapping_add(nes.cpu.addr_rel);
+        nes.cpu.pc = addr;
     }
+}
 
-    pub fn BPL(&mut self) {
-        if !self.get_flag(CpuFlag::N) {
-            self.cycles += 1;
-            let addr = self.pc.wrapping_add(self.addr_rel);
-            self.pc = addr;
-        }
+pub fn clc(nes: &mut Nes) {
+    cpu::set_flag(nes, CpuFlag::C, false);
+}
+
+pub fn cld(nes: &mut Nes) {
+    cpu::set_flag(nes, CpuFlag::D, false);
+}
+
+pub fn cli(nes: &mut Nes) {
+    cpu::set_flag(nes, CpuFlag::I, false);
+}
+
+pub fn clv(nes: &mut Nes) {
+    cpu::set_flag(nes, CpuFlag::V, false);
+}
+
+pub fn cmp(nes: &mut Nes) {
+    let tmp = (nes.cpu.ac as u16).wrapping_sub(nes.cpu.data as u16);
+    cpu::set_flag(nes, CpuFlag::C, nes.cpu.ac >= nes.cpu.data);
+    cpu::set_flag(nes, CpuFlag::Z, (tmp & 0x00ff) == 0);
+    cpu::set_flag(nes, CpuFlag::N, tmp & 0x0080 != 0);
+    nes.cpu.cycles += 1;
+}
+
+pub fn cpx(nes: &mut Nes) {
+    let tmp = (nes.cpu.x as u16).wrapping_sub(nes.cpu.data as u16);
+    cpu::set_flag(nes, CpuFlag::C, nes.cpu.x >= nes.cpu.data);
+    cpu::set_flag(nes, CpuFlag::Z, (tmp & 0x00ff) == 0);
+    cpu::set_flag(nes, CpuFlag::N, tmp & 0x0080 != 0);
+}
+
+pub fn cpy(nes: &mut Nes) {
+    let tmp = (nes.cpu.y as u16).wrapping_sub(nes.cpu.data as u16);
+    cpu::set_flag(nes, CpuFlag::C, nes.cpu.y >= nes.cpu.data);
+    cpu::set_flag(nes, CpuFlag::Z, (tmp & 0x00ff) == 0);
+    cpu::set_flag(nes, CpuFlag::N, tmp & 0x0080 != 0);
+}
+
+pub fn dec(nes: &mut Nes) {
+    let tmp = nes.cpu.data - 1;
+    cpu::write(nes, nes.cpu.addr_abs, tmp);
+    cpu::set_flag(nes, CpuFlag::Z, tmp == 0);
+    cpu::set_flag(nes, CpuFlag::N, tmp & 0x0080 != 0);
+}
+
+pub fn dex(nes: &mut Nes) {
+    nes.cpu.x = nes.cpu.x.wrapping_sub(1);
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.x == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.x & 0x0080 != 0);
+}
+
+pub fn dey(nes: &mut Nes) {
+    nes.cpu.y = nes.cpu.y.wrapping_sub(1);
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.y == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.y & 0x0080 != 0);
+}
+
+pub fn eor(nes: &mut Nes) {
+    nes.cpu.ac ^= nes.cpu.data;
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.ac == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.ac & 0x0080 != 0);
+}
+
+pub fn inc(nes: &mut Nes) {
+    let tmp = nes.cpu.data.wrapping_add(1);
+    cpu::write(nes, nes.cpu.addr_abs, tmp);
+    cpu::set_flag(nes, CpuFlag::Z, tmp == 0);
+    cpu::set_flag(nes, CpuFlag::N, tmp & 0x0080 != 0);
+}
+
+pub fn inx(nes: &mut Nes) {
+    nes.cpu.x = nes.cpu.x.wrapping_add(1);
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.x == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.x & 0x0080 != 0);
+}
+
+pub fn iny(nes: &mut Nes) {
+    nes.cpu.y = nes.cpu.y.wrapping_add(1);
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.y == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.y & 0x0080 != 0);
+}
+
+pub fn jmp(nes: &mut Nes) {
+    nes.cpu.pc = nes.cpu.addr_abs;
+}
+
+pub fn jsr(nes: &mut Nes) {
+    nes.cpu.pc = nes.cpu.sp.wrapping_sub(1) as u16;
+    cpu::write(nes, nes.cpu.sp as u16 + 0x100, ((nes.cpu.pc >> 8) & 0x00ff) as u8);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
+    cpu::write(nes, nes.cpu.sp as u16 + 0x100, nes.cpu.pc as u8);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
+    nes.cpu.pc = nes.cpu.addr_abs;
+}
+
+pub fn lda(nes: &mut Nes) {
+    nes.cpu.ac = nes.cpu.data;
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.ac == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.ac & 0x0080 != 0);
+}
+
+pub fn ldx(nes: &mut Nes) {
+    nes.cpu.x = nes.cpu.data;
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.x == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.x & 0x0080 != 0);
+}
+
+pub fn ldy(nes: &mut Nes) {
+    nes.cpu.y = nes.cpu.data;
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.y == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.y & 0x0080 != 0);
+}
+
+pub fn lsr(nes: &mut Nes) {
+
+    cpu::set_flag(nes, CpuFlag::C, nes.cpu.data & 0x0001 != 0);
+
+    let tmp = (nes.cpu.data as u16) >> 1;
+    
+    cpu::set_flag(nes, CpuFlag::Z, tmp & 0x00ff == 0);
+    cpu::set_flag(nes, CpuFlag::N, tmp & 0x0080 != 0);
+
+    if nes.cpu.addr_mode == addressing::imp as usize {
+        nes.cpu.ac = tmp as u8;
+    } else {
+        cpu::write(nes, nes.cpu.addr_abs, tmp as u8);
     }
+}
 
-    pub fn BRK(&mut self) {
-        self.pc = self.pc.wrapping_add(1);
-	
-        self.set_flag(CpuFlag::I, true);
-        self.write(0x0100 + self.sp as u16, (self.pc >> 8) as u8);
-        self.sp = self.sp.wrapping_sub(1);
-        self.write(0x0100 + self.sp as u16, self.pc as u8);
-        self.sp = self.sp.wrapping_sub(1);
+pub fn nop(_nes: &mut Nes) {
+    return;
+}
 
-        self.set_flag(CpuFlag::B, true);
-        self.write(0x0100 + self.sp as u16, self.status);
-        self.sp = self.sp.wrapping_sub(1);
-        self.set_flag(CpuFlag::B, false);
+pub fn ora(nes: &mut Nes) {
+    nes.cpu.ac |= nes.cpu.data;
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.ac == 0x00);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.ac & 0x80 != 0);
+}
 
-        self.pc = self.read(0xfffe) as u16 | ((self.read(0xffff) as u16) << 8);
-    }
+pub fn pha(nes: &mut Nes) {
+    cpu::write(nes, nes.cpu.sp as u16 + 0x0100, nes.cpu.ac);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
+}
 
-    pub fn BVC(&mut self) {
-        if !self.get_flag(CpuFlag::V) {
-            self.cycles += 1;
-            let addr = self.pc.wrapping_add(self.addr_rel);
-            self.pc = addr;
-        }
-    }
+pub fn php(nes: &mut Nes) {
+    cpu::write(nes, 0x0100 + nes.cpu.sp as u16, nes.cpu.status | CpuFlag::B as u8);
+    cpu::set_flag(nes, CpuFlag::B, false);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
+}
 
-    pub fn BVS(&mut self) {
-        if self.get_flag(CpuFlag::V) {
-            self.cycles += 1;
-            let addr = self.pc.wrapping_add(self.addr_rel);
-            self.pc = addr;
-        }
-    }
+pub fn pla(nes: &mut Nes) {
+    nes.cpu.sp = nes.cpu.sp.wrapping_add(1);
+    nes.cpu.ac = cpu::read(nes, nes.cpu.sp as u16 + 0x0100);
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.ac == 0x00);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.ac & 0x80 != 0);
+}
 
-    pub fn CLC(&mut self) {
-        self.set_flag(CpuFlag::C, false);
-    }
+pub fn plp(nes: &mut Nes) {
+    nes.cpu.sp = nes.cpu.sp.wrapping_add(1);
+    cpu::read(nes, 0x0100 + nes.cpu.sp as u16);
+    cpu::set_flag(nes, CpuFlag::B, true);
+}
 
-    pub fn CLD(&mut self) {
-        self.set_flag(CpuFlag::D, false);
-    }
-
-    pub fn CLI(&mut self) {
-        self.set_flag(CpuFlag::I, false);
-    }
-
-    pub fn CLV(&mut self) {
-        self.set_flag(CpuFlag::V, false);
-    }
-
-    pub fn CMP(&mut self) {
-        let tmp = (self.ac as u16).wrapping_sub(self.data as u16);
-        self.set_flag(CpuFlag::C, self.ac >= self.data);
-        self.set_flag(CpuFlag::Z, (tmp & 0x00ff) == 0);
-        self.set_flag(CpuFlag::N, tmp & 0x0080 != 0);
-        self.cycles += 1;
-    }
-
-    pub fn CPX(&mut self) {
-        let tmp = (self.x as u16).wrapping_sub(self.data as u16);
-        self.set_flag(CpuFlag::C, self.x >= self.data);
-        self.set_flag(CpuFlag::Z, (tmp & 0x00ff) == 0);
-        self.set_flag(CpuFlag::N, tmp & 0x0080 != 0);
-    }
-
-    pub fn CPY(&mut self) {
-        let tmp = (self.y as u16).wrapping_sub(self.data as u16);
-        self.set_flag(CpuFlag::C, self.y >= self.data);
-        self.set_flag(CpuFlag::Z, (tmp & 0x00ff) == 0);
-        self.set_flag(CpuFlag::N, tmp & 0x0080 != 0);
-    }
-
-    pub fn DEC(&mut self) {
-	    let tmp = self.data - 1;
-	    self.write(self.addr_abs, tmp);
-        self.set_flag(CpuFlag::Z, tmp == 0);
-        self.set_flag(CpuFlag::N, tmp & 0x0080 != 0);
-    }
-
-    pub fn DEX(&mut self) {
-        self.x = self.x.wrapping_sub(1);
-        self.set_flag(CpuFlag::Z, self.x == 0);
-        self.set_flag(CpuFlag::N, self.x & 0x0080 != 0);
-    }
-
-    pub fn DEY(&mut self) {
-        self.y = self.y.wrapping_sub(1);
-        self.set_flag(CpuFlag::Z, self.y == 0);
-        self.set_flag(CpuFlag::N, self.y & 0x0080 != 0);
-    }
-
-    pub fn EOR(&mut self) {
-        self.ac ^= self.data;
-        self.set_flag(CpuFlag::Z, self.ac == 0);
-        self.set_flag(CpuFlag::N, self.ac & 0x0080 != 0);
-    }
-
-    pub fn INC(&mut self) {
-        let tmp = self.data.wrapping_add(1);
-	    self.write(self.addr_abs, tmp);
-        self.set_flag(CpuFlag::Z, tmp == 0);
-        self.set_flag(CpuFlag::N, tmp & 0x0080 != 0);
-    }
-
-    pub fn INX(&mut self) {
-        self.x = self.x.wrapping_add(1);
-        self.set_flag(CpuFlag::Z, self.x == 0);
-        self.set_flag(CpuFlag::N, self.x & 0x0080 != 0);
-    }
-
-    pub fn INY(&mut self) {
-        self.y = self.y.wrapping_add(1);
-        self.set_flag(CpuFlag::Z, self.y == 0);
-        self.set_flag(CpuFlag::N, self.y & 0x0080 != 0);
-    }
-
-    pub fn JMP(&mut self) {
-        self.pc = self.addr_abs;
-    }
-
-    pub fn JSR(&mut self) {
-        self.pc = self.sp.wrapping_sub(1) as u16;
-        self.write(self.sp as u16 + 0x100, ((self.pc >> 8) & 0x00ff) as u8);
-        self.sp = self.sp.wrapping_sub(1);
-        self.write(self.sp as u16 + 0x100, self.pc as u8);
-        self.sp = self.sp.wrapping_sub(1);
-        self.pc = self.addr_abs;
-    }
-
-    pub fn LDA(&mut self) {
-        self.ac = self.data;
-        self.set_flag(CpuFlag::Z, self.ac == 0);
-        self.set_flag(CpuFlag::N, self.ac & 0x0080 != 0);
-    }
-
-    pub fn LDX(&mut self) {
-        self.x = self.data;
-        self.set_flag(CpuFlag::Z, self.x == 0);
-        self.set_flag(CpuFlag::N, self.x & 0x0080 != 0);
-    }
-
-    pub fn LDY(&mut self) {
-        self.y = self.data;
-        self.set_flag(CpuFlag::Z, self.y == 0);
-        self.set_flag(CpuFlag::N, self.y & 0x0080 != 0);
-    }
-
-    pub fn LSR(&mut self) {
-
-        self.set_flag(CpuFlag::C, self.data & 0x0001 != 0);
-
-        let tmp = (self.data as u16) >> 1;
-        
-        self.set_flag(CpuFlag::Z, tmp & 0x00ff == 0);
-        self.set_flag(CpuFlag::N, tmp & 0x0080 != 0);
-
-        if self.addr_mode == Cpu::IMP as usize {
-            self.ac = tmp as u8;
-        } else {
-            self.write(self.addr_abs, tmp as u8);
-        }
-    }
-
-    pub fn NOP(&mut self) {
-        return;
-    }
-
-    pub fn ORA(&mut self) {
-        self.ac |= self.data;
-        self.set_flag(CpuFlag::Z, self.ac == 0x00);
-        self.set_flag(CpuFlag::N, self.ac & 0x80 != 0);
-    }
-
-    pub fn PHA(&mut self) {
-        self.write(self.sp as u16 + 0x0100, self.ac);
-        self.sp = self.sp.wrapping_sub(1);
-    }
-
-    pub fn PHP(&mut self) {
-        self.write(0x0100 + self.sp as u16, self.status | CpuFlag::B as u8);
-        self.set_flag(CpuFlag::B, false);
-        self.sp = self.sp.wrapping_sub(1);
-    }
-
-    pub fn PLA(&mut self) {
-        self.sp = self.sp.wrapping_add(1);
-        self.ac = self.read(self.sp as u16 + 0x0100);
-        self.set_flag(CpuFlag::Z, self.ac == 0x00);
-        self.set_flag(CpuFlag::N, self.ac & 0x80 != 0);
-    }
-
-    pub fn PLP(&mut self) {
-        self.sp = self.sp.wrapping_add(1);
-        self.read(0x0100 + self.sp as u16);
-        self.set_flag(CpuFlag::B, true);
-    }
-
-    pub fn ROL(&mut self) {
-        let mut tmp = (self.data as u16) << 1;
-        if self.get_flag(CpuFlag::C) {
-            tmp |= 0x0001;
-        }
-        
-        self.set_flag(CpuFlag::C, tmp & 0xff00 != 0);
-        self.set_flag(CpuFlag::Z, tmp & 0x00ff == 0);
-        self.set_flag(CpuFlag::N, tmp & 0x0080 != 0);
-
-        if self.addr_mode == Cpu::IMP as usize {
-            self.ac = tmp as u8;
-        } else {
-            self.write(self.addr_abs, tmp as u8);
-        }
-    }
-
-    pub fn ROR(&mut self) {
-        let mut tmp = (self.data as u16) >> 1;
-        if self.get_flag(CpuFlag::C) {
-            tmp |= 0x0080;
-        }
-        
-        self.set_flag(CpuFlag::C, self.data & 0x0001 != 0);
-        self.set_flag(CpuFlag::Z, tmp & 0x00ff == 0);
-        self.set_flag(CpuFlag::N, tmp & 0x0080 != 0);
-
-        if self.addr_mode == Cpu::IMP as usize {
-            self.ac = tmp as u8;
-        } else {
-            self.write(self.addr_abs, tmp as u8);
-        }
-    }
-
-    pub fn RTI(&mut self) {
-        self.sp = self.sp.wrapping_add(1);
-        self.status = self.read(self.sp as u16 + 0x0100);
-        self.set_flag(CpuFlag::B, false);
-        self.sp = self.sp.wrapping_add(1);
-        self.pc = self.read(self.sp as u16 + 0x0100) as u16;
-        self.sp = self.sp.wrapping_add(1);
-        self.pc |= (self.read(self.sp as u16 + 0x0100) as u16) << 8;
-    }
-
-    pub fn RTS(&mut self) {
-        self.sp = self.sp.wrapping_add(1);
-        self.pc = self.read(0x0100 + self.sp as u16) as u16;
-        self.sp = self.sp.wrapping_add(1);
-        self.pc |= (self.read(0x0100 + self.sp as u16) as u16) << 8;
-        self.pc = self.pc.wrapping_add(1);
-    }
-
-    pub fn SBC(&mut self) {
-        let temp = (self.ac + self.data + self.get_flag(CpuFlag::C) as u8) as u16;
-        self.data ^= 0xff;
-	
-        self.set_flag(CpuFlag::C, temp > 255);
-        self.set_flag(CpuFlag::Z, (temp & 0x00ff) == 0);
-        self.set_flag(CpuFlag::V, (!(self.ac as u16 ^ self.data as u16) & (self.ac as u16 ^ temp)) & 0x0080 != 0);
-        self.set_flag(CpuFlag::N, temp & 0x80 != 0);
-        
-        self.ac = temp as u8;
-        self.cycles += 1;
-    }
-
-    pub fn SEC(&mut self) {
-        self.set_flag(CpuFlag::C, true);
-    }
-
-    pub fn SED(&mut self) {
-        self.set_flag(CpuFlag::D, true);
-    }
-
-    pub fn SEI(&mut self) {
-        self.set_flag(CpuFlag::I, true);
-    }
-
-    pub fn STA(&mut self) {
-        self.write(self.addr_abs, self.ac);
-    }
-
-    pub fn STX(&mut self) {
-        self.write(self.addr_abs, self.x);
-    }
-
-    pub fn STY(&mut self) {
-        self.write(self.addr_abs, self.y);
-    }
-
-    pub fn TAX(&mut self) {
-        self.x = self.ac;
-        self.set_flag(CpuFlag::Z, self.x == 0);
-        self.set_flag(CpuFlag::N, self.x & 0x0080 != 0);
-    }
-
-    pub fn TAY(&mut self) {
-        self.y = self.ac;
-        self.set_flag(CpuFlag::Z, self.y == 0);
-        self.set_flag(CpuFlag::N, self.y & 0x0080 != 0);
-    }
-
-    pub fn TSX(&mut self) {
-        self.x = self.sp;
-        self.set_flag(CpuFlag::Z, self.x == 0);
-        self.set_flag(CpuFlag::N, self.x & 0x0080 != 0);
-    }
-
-    pub fn TXA(&mut self) {
-        self.ac = self.x;
-        self.set_flag(CpuFlag::Z, self.ac == 0);
-        self.set_flag(CpuFlag::N, self.ac & 0x0080 != 0);
-    }
-
-    pub fn TXS(&mut self) {
-        self.sp = self.x;
-    }
-
-    pub fn TYA(&mut self) {
-        self.ac = self.y;
-        self.set_flag(CpuFlag::Z, self.ac == 0);
-        self.set_flag(CpuFlag::N, self.ac & 0x0080 != 0);
-    }
-
-    pub fn XXX(&mut self) {
-        return;
+pub fn rol(nes: &mut Nes) {
+    let mut tmp = (nes.cpu.data as u16) << 1;
+    if cpu::get_flag(nes, CpuFlag::C) {
+        tmp |= 0x0001;
     }
     
+    cpu::set_flag(nes, CpuFlag::C, tmp & 0xff00 != 0);
+    cpu::set_flag(nes, CpuFlag::Z, tmp & 0x00ff == 0);
+    cpu::set_flag(nes, CpuFlag::N, tmp & 0x0080 != 0);
+
+    if nes.cpu.addr_mode == addressing::imp as usize {
+        nes.cpu.ac = tmp as u8;
+    } else {
+        cpu::write(nes, nes.cpu.addr_abs, tmp as u8);
+    }
 }
+
+pub fn ror(nes: &mut Nes) {
+    let mut tmp = (nes.cpu.data as u16) >> 1;
+    if cpu::get_flag(nes, CpuFlag::C) {
+        tmp |= 0x0080;
+    }
+    
+    cpu::set_flag(nes, CpuFlag::C, nes.cpu.data & 0x0001 != 0);
+    cpu::set_flag(nes, CpuFlag::Z, tmp & 0x00ff == 0);
+    cpu::set_flag(nes, CpuFlag::N, tmp & 0x0080 != 0);
+
+    if nes.cpu.addr_mode == addressing::imp as usize {
+        nes.cpu.ac = tmp as u8;
+    } else {
+        cpu::write(nes, nes.cpu.addr_abs, tmp as u8);
+    }
+}
+
+pub fn rti(nes: &mut Nes) {
+    nes.cpu.sp = nes.cpu.sp.wrapping_add(1);
+    nes.cpu.status = cpu::read(nes, nes.cpu.sp as u16 + 0x0100);
+    cpu::set_flag(nes, CpuFlag::B, false);
+    nes.cpu.sp = nes.cpu.sp.wrapping_add(1);
+    nes.cpu.pc = cpu::read(nes, nes.cpu.sp as u16 + 0x0100) as u16;
+    nes.cpu.sp = nes.cpu.sp.wrapping_add(1);
+    nes.cpu.pc |= (cpu::read(nes, nes.cpu.sp as u16 + 0x0100) as u16) << 8;
+}
+
+pub fn rts(nes: &mut Nes) {
+    nes.cpu.sp = nes.cpu.sp.wrapping_add(1);
+    nes.cpu.pc = cpu::read(nes, 0x0100 + nes.cpu.sp as u16) as u16;
+    nes.cpu.sp = nes.cpu.sp.wrapping_add(1);
+    nes.cpu.pc |= (cpu::read(nes, 0x0100 + nes.cpu.sp as u16) as u16) << 8;
+    nes.cpu.pc = nes.cpu.pc.wrapping_add(1);
+}
+
+pub fn sbc(nes: &mut Nes) {
+    let temp = (nes.cpu.ac + nes.cpu.data + cpu::get_flag(nes, CpuFlag::C) as u8) as u16;
+    nes.cpu.data ^= 0xff;
+
+    cpu::set_flag(nes, CpuFlag::C, temp > 255);
+    cpu::set_flag(nes, CpuFlag::Z, (temp & 0x00ff) == 0);
+    cpu::set_flag(nes, CpuFlag::V, (!(nes.cpu.ac as u16 ^ nes.cpu.data as u16) & (nes.cpu.ac as u16 ^ temp)) & 0x0080 != 0);
+    cpu::set_flag(nes, CpuFlag::N, temp & 0x80 != 0);
+    
+    nes.cpu.ac = temp as u8;
+    nes.cpu.cycles += 1;
+}
+
+pub fn sec(nes: &mut Nes) {
+    cpu::set_flag(nes, CpuFlag::C, true);
+}
+
+pub fn sed(nes: &mut Nes) {
+    cpu::set_flag(nes, CpuFlag::D, true);
+}
+
+pub fn sei(nes: &mut Nes) {
+    cpu::set_flag(nes, CpuFlag::I, true);
+}
+
+pub fn sta(nes: &mut Nes) {
+    cpu::write(nes, nes.cpu.addr_abs, nes.cpu.ac);
+}
+
+pub fn stx(nes: &mut Nes) {
+    cpu::write(nes, nes.cpu.addr_abs, nes.cpu.x);
+}
+
+pub fn sty(nes: &mut Nes) {
+    cpu::write(nes, nes.cpu.addr_abs, nes.cpu.y);
+}
+
+pub fn tax(nes: &mut Nes) {
+    nes.cpu.x = nes.cpu.ac;
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.x == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.x & 0x0080 != 0);
+}
+
+pub fn tay(nes: &mut Nes) {
+    nes.cpu.y = nes.cpu.ac;
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.y == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.y & 0x0080 != 0);
+}
+
+pub fn tsx(nes: &mut Nes) {
+    nes.cpu.x = nes.cpu.sp;
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.x == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.x & 0x0080 != 0);
+}
+
+pub fn txa(nes: &mut Nes) {
+    nes.cpu.ac = nes.cpu.x;
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.ac == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.ac & 0x0080 != 0);
+}
+
+pub fn txs(nes: &mut Nes) {
+    nes.cpu.sp = nes.cpu.x;
+}
+
+pub fn tya(nes: &mut Nes) {
+    nes.cpu.ac = nes.cpu.y;
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.ac == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.ac & 0x0080 != 0);
+}
+
+pub fn xxx(_nes: &mut Nes) {
+    return;
+}
+

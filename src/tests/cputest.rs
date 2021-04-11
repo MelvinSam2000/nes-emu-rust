@@ -1,7 +1,7 @@
 mod cputest {
 
-    use crate::cpu::cpu::Cpu;
-    use crate::mem::debugram::DebugRam;
+    use crate::nes::Nes;
+    use crate::cpu::cpu;
 
     // Tests from https://skilldrick.github.io/easy6502/
     
@@ -20,14 +20,17 @@ mod cputest {
             0x8d, 0x01, 0x02, 0xa9, 0x08, 0x8d, 0x02, 0x02
         ];
         let prgsize = prg.len() as u16;
-        let mut cpu = Cpu::new(Box::new(DebugRam::new(prg)));
-        while cpu.pc < prgsize {
-            cpu.clock();
+
+        let mut nes = Nes::new();
+        nes.load_debug(prg);
+
+        while nes.cpu.pc < prgsize {
+            cpu::clock(&mut nes);
         }
-        assert_eq!(cpu.bus.read(0x0200), 0x01);
-        assert_eq!(cpu.bus.read(0x0201), 0x05);
-        assert_eq!(cpu.bus.read(0x0202), 0x08);
-        assert_eq!(cpu.bus.read(0x0203), 0x00);
+        assert_eq!(cpu::read(&mut nes, 0x0200), 0x01);
+        assert_eq!(cpu::read(&mut nes, 0x0201), 0x05);
+        assert_eq!(cpu::read(&mut nes, 0x0202), 0x08);
+        assert_eq!(cpu::read(&mut nes, 0x0203), 0x00);
     }
 
     #[test]
@@ -40,11 +43,14 @@ mod cputest {
          */
         let prg = vec![0xa9, 0xc0, 0xaa, 0xe8, 0x69, 0xc4];
         let prgsize = prg.len() as u16;
-        let mut cpu = Cpu::new(Box::new(DebugRam::new(prg)));
-        while cpu.pc < prgsize {
-            cpu.clock();
+
+        let mut nes = Nes::new();
+        nes.load_debug(prg);
+
+        while nes.cpu.pc < prgsize {
+            cpu::clock(&mut nes);
         }
-        assert_eq!(cpu.ac, 0x84);
+        assert_eq!(nes.cpu.ac, 0x84);
     }
 
     #[test]
@@ -63,13 +69,16 @@ mod cputest {
             0x03, 0xd0, 0xf8, 0x8e, 0x01, 0x02
         ];
         let prgsize = prg.len() as u16;
-        let mut cpu = Cpu::new(Box::new(DebugRam::new(prg)));
-        while cpu.pc < prgsize {
-            cpu.clock();
+
+        let mut nes = Nes::new();
+        nes.load_debug(prg);
+
+        while nes.cpu.pc < prgsize {
+            cpu::clock(&mut nes);
         }
-        assert_eq!(cpu.x, 0x03);
-        assert_eq!(cpu.read(0x0200), 0x03);
-        assert_eq!(cpu.read(0x0201), 0x03);
+        assert_eq!(nes.cpu.x, 0x03);
+        assert_eq!(cpu::read(&mut nes, 0x0200), 0x03);
+        assert_eq!(cpu::read(&mut nes, 0x0201), 0x03);
     }
 
     #[test]
@@ -84,10 +93,13 @@ mod cputest {
          */
         let prg = vec![0xa9, 0x01, 0xc9, 0x02, 0xd0, 0x02, 0x85, 0x22, 0xea];
         let prgsize = prg.len() as u16;
-        let mut cpu = Cpu::new(Box::new(DebugRam::new(prg)));
-        while cpu.pc < prgsize {
-            cpu.clock();
+
+        let mut nes = Nes::new();
+        nes.load_debug(prg);
+
+        while nes.cpu.pc < prgsize {
+            cpu::clock(&mut nes);
         }
-        assert_eq!(cpu.ac, 0x01);
+        assert_eq!(nes.cpu.ac, 0x01);
     }
 }
