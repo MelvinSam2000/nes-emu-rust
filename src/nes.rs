@@ -4,6 +4,7 @@ use crate::cpu::cpu::Cpu;
 use crate::cpu::cpu;
 use crate::ppu::Ppu;
 use crate::buscpu::BusCpu;
+use crate::busppu::BusPpu;
 use crate::cartridge::Cartridge;
 
 pub struct Nes {
@@ -12,6 +13,7 @@ pub struct Nes {
     pub ppu: Ppu,
     pub cartridge: Cartridge,
     pub buscpu: BusCpu,
+    pub busppu: BusPpu,
 }
 
 impl Nes {
@@ -22,12 +24,13 @@ impl Nes {
         
         // Create devices
         let cartridge = Cartridge::new();
+        let cpu = Cpu::new();
         let ppu = Ppu::new();
         let buscpu = BusCpu::new();
-        let cpu = Cpu::new();
+        let busppu = BusPpu::new();
 
         return Self {
-            cpu, ppu, cartridge, buscpu
+            cpu, ppu, cartridge, buscpu, busppu
         };
     }
 

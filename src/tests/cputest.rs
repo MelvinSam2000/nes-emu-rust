@@ -1,5 +1,8 @@
 mod cputest {
 
+    use std::fs::OpenOptions;
+    use std::io::prelude::*;
+
     use crate::nes::Nes;
     use crate::cpu::cpu;
 
@@ -25,7 +28,7 @@ mod cputest {
         nes.load_debug(prg);
 
         while nes.cpu.pc < prgsize {
-            cpu::clock(&mut nes);
+            cpu::step(&mut nes);
         }
         assert_eq!(cpu::read(&mut nes, 0x0200), 0x01);
         assert_eq!(cpu::read(&mut nes, 0x0201), 0x05);
@@ -48,7 +51,7 @@ mod cputest {
         nes.load_debug(prg);
 
         while nes.cpu.pc < prgsize {
-            cpu::clock(&mut nes);
+            cpu::step(&mut nes);
         }
         assert_eq!(nes.cpu.ac, 0x84);
     }
@@ -74,7 +77,7 @@ mod cputest {
         nes.load_debug(prg);
 
         while nes.cpu.pc < prgsize {
-            cpu::clock(&mut nes);
+            cpu::step(&mut nes);
         }
         assert_eq!(nes.cpu.x, 0x03);
         assert_eq!(cpu::read(&mut nes, 0x0200), 0x03);
@@ -98,7 +101,7 @@ mod cputest {
         nes.load_debug(prg);
 
         while nes.cpu.pc < prgsize {
-            cpu::clock(&mut nes);
+            cpu::step(&mut nes);
         }
         assert_eq!(nes.cpu.ac, 0x01);
     }
@@ -108,8 +111,20 @@ mod cputest {
         let mut nes = Nes::new();
         nes.load("games/nestest.nes".to_string());
         nes.reset();
-        for _i in 0..1000 {
-            nes.clock();
+        nes.cpu.pc = 0xc000;
+        cpu::step(&mut nes);
+        for _i in 0..5000 {
+            let log = cpu::step(&mut nes);
+
+            let mut file = OpenOptions::new()
+                .write(true)
+                .append(true)
+                .open("logs/cpu.log")
+                .unwrap();
+
+            if let Err(e) = writeln!(file, "{}", log) {
+                eprintln!("Couldn't write to file: {}", e);
+            }
         }
         assert_eq!(1, 1);
     }

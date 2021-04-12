@@ -15,6 +15,7 @@ mod tests {
 mod cartridge;
 mod buscpu;
 mod ppu;
+mod busppu;
 
 use nes::Nes;
 

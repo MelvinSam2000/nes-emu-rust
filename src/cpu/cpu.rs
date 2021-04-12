@@ -1,5 +1,6 @@
 use crate::nes::Nes;
 use crate::cpu::decode;
+use crate::cpu::addressing;
 use crate::buscpu;
 
 pub struct Cpu {
@@ -14,8 +15,7 @@ pub struct Cpu {
 
     // helper variables
     pub cycles: u8,
-    pub addr_abs: u16,
-    pub addr_rel: u16,
+    pub addr: u16,
     pub addr_mode: usize,
     pub data: u8,
 
@@ -30,12 +30,13 @@ pub enum CpuFlag {
     I = (1 << 2),	// Disable Interrupts
     D = (1 << 3),	// Decimal Mode (not used)
     B = (1 << 4),	// Break
-    _U = (1 << 5),	// Unused
+    U = (1 << 5),	// Unused (break 2)
     V = (1 << 6),	// Overflow
     N = (1 << 7),	// Negative
 }
 
 impl Cpu {
+
     pub fn new() -> Self {
         return Self {
             pc: 0x0000,
@@ -46,8 +47,7 @@ impl Cpu {
             status: 0x00,
 
             cycles: 0,
-            addr_abs: 0x0000,
-            addr_rel: 0x0000,
+            addr: 0x0000,
             addr_mode: 0x0000,
             data: 0x00,
             debug: false,
@@ -61,7 +61,7 @@ pub fn reset(nes: &mut Nes) {
     nes.cpu.x = 0;
     nes.cpu.y = 0;
     nes.cpu.sp = 0xfd;
-    nes.cpu.status = 0x00;
+    nes.cpu.status = 0x00 | CpuFlag::I as u8 | CpuFlag::U as u8;
     nes.cpu.pc = fetch_word(nes, 0xfffc);
     nes.cpu.cycles = 8;
 }
@@ -103,6 +103,49 @@ pub fn irq(nes: &mut Nes) {
 
     nes.cpu.cycles = 7;
 
+}
+
+// For debugging
+pub fn step(nes: &mut Nes) -> String {
+    
+    let lg_pc = nes.cpu.pc;
+    let decoded = decode::decode(read(nes, lg_pc));
+
+    let (a, x, y, p, sp) = (nes.cpu.ac, nes.cpu.x, nes.cpu.y, nes.cpu.status, nes.cpu.sp);
+
+    clock(nes);
+    while nes.cpu.cycles > 0 {
+        clock(nes);
+    }
+    
+    // Format instruction bytes
+    let mut inst_bytes = String::from("");
+    let mut bytes = [0u8; 3]; 
+    if decoded.bytes >= 1 {
+        bytes[0] = read(nes, lg_pc);
+        inst_bytes.push_str(&format!("{:02X}", bytes[0]));
+    }
+    if decoded.bytes >= 2 {
+        bytes[1] = read(nes, lg_pc.wrapping_add(1));
+        inst_bytes.push_str(&format!(" {:02X}", bytes[1]));    
+    }
+    if decoded.bytes >= 3 {
+        bytes[2] = read(nes, lg_pc.wrapping_add(2));
+        inst_bytes.push_str(&format!(" {:02X}", bytes[2]));    
+    }
+    while inst_bytes.len() < 8 {
+        inst_bytes.push_str(" ");
+    }
+
+
+    // Format registers and the rest
+    let mut asm_instruction = String::from(format!(
+        "{:04X}  {:?} \t{} \tA:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}",
+        lg_pc, inst_bytes, decoded.instruction_str, 
+        a, x, y, p, sp
+    ));
+    asm_instruction = asm_instruction.replace("\"", "");
+    return asm_instruction;
 }
 
 pub fn nmi(nes: &mut Nes) {

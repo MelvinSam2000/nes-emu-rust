@@ -8,7 +8,7 @@ impl Mapper for NRom {
     fn read_prg(&self, cart: &Cartridge, addr: u16) -> u16 {
         if 0x8000 <= addr {
             if cart.prg_banks == 2 {
-               return addr - 0x8000;
+                return addr & 0x7fff;
             }
             if cart.prg_banks == 1 {
                 return addr & 0x3fff;
@@ -20,7 +20,7 @@ impl Mapper for NRom {
     fn write_prg(&self, cart: &Cartridge, addr: u16) -> u16 {
         if 0x8000 <= addr {
             if cart.prg_banks == 2 {
-               return addr - 0x8000;
+                return addr & 0x7fff;
             }
             if cart.prg_banks == 1 {
                 return addr & 0x3fff;

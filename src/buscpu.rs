@@ -20,11 +20,11 @@ pub fn read(nes: &mut Nes, addr: u16) -> u8 {
             return nes.buscpu.ram[addr as usize];
         },
         0x2000 ..= 0x3fff => {
-            println!("READING FROM PPU UNSUPPORTED");
+            //println!("READING FROM PPU UNSUPPORTED");
             return 0;
         },
         0x4000 ..= 0x401f => {
-            println!("READING FROM APU and IO UNSUPPORTED");
+            //println!("READING FROM APU and IO UNSUPPORTED");
             return 0;
         },
         0x4020 ..= 0xffff => {
