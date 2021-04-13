@@ -50,10 +50,10 @@ impl Nes {
 
     pub fn clock(&mut self) {
         if self.clock_count % 3 == 0 {
-            //cpu::clock(self);
+            cpu::clock(self);
         }
         ppu::clock(self);
-        self.clock_count.wrapping_add(1);
+        self.clock_count = self.clock_count.wrapping_add(1);
     }
 
     pub fn load(&mut self, nes_file_path: String) {

@@ -29,11 +29,14 @@ const HEIGHT: u32 = 240;
 pub fn main() {
 
     let mut nes = Nes::new();
+    nes.load(String::from("games/nestest.nes"));
+    nes.reset();
 
     let mut window: PistonWindow = WindowSettings::new("NES EMULATOR", (WIDTH, HEIGHT))
         .exit_on_esc(true)
         .build()
         .unwrap();
+    window.set_event_settings(EventSettings::new().max_fps(60));
 
     let mut canvas = im::ImageBuffer::new(WIDTH, HEIGHT);
     let mut texture_context = TextureContext {

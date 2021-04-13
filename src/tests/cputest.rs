@@ -113,7 +113,7 @@ mod cputest {
         nes.reset();
         nes.cpu.pc = 0xc000;
         cpu::step(&mut nes);
-        for _i in 0..6000 {
+        for _i in 0..2000 {
             let log = cpu::step(&mut nes);
 
             let mut file = OpenOptions::new()

@@ -423,16 +423,26 @@ pub fn xxx(_nes: &mut Nes) {
 // UNOFFICIAL OPCODES:
 
 pub fn dcp(nes: &mut Nes) {
-    dec(nes);
-    cmp(nes);
-    //nes.cpu.data = nes.cpu.data.wrapping_sub(1);
-    //cpu::write(nes, nes.cpu.addr, nes.cpu.data);
-    //cpu::set_flag(nes, CpuFlag::Z, nes.cpu.data == 0);
-    //cpu::set_flag(nes, CpuFlag::N, nes.cpu.data & 0x0080 != 0);
+    nes.cpu.data = nes.cpu.data.wrapping_sub(1);
+    cpu::write(nes, nes.cpu.addr, nes.cpu.data);
+    if nes.cpu.ac >= nes.cpu.data {
+        cpu::set_flag(nes, CpuFlag::C, true);
+    }
+    let tmp = nes.cpu.ac.wrapping_sub(nes.cpu.data);
+    cpu::set_flag(nes, CpuFlag::Z, tmp == 0);
+    cpu::set_flag(nes, CpuFlag::N, tmp & 0x0080 != 0);
 }
 
 pub fn dop(nes: &mut Nes) {
     nes.cpu.pc = nes.cpu.pc.wrapping_add(1);
+}
+
+pub fn isb(nes: &mut Nes) {
+    let tmp = nes.cpu.data.wrapping_add(1);
+    cpu::write(nes, nes.cpu.addr, tmp);
+    nes.cpu.ac = nes.cpu.ac.wrapping_sub(tmp);
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.ac == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.ac & 0x0080 != 0);
 }
 
 pub fn lax(nes: &mut Nes) {
@@ -442,11 +452,85 @@ pub fn lax(nes: &mut Nes) {
     cpu::set_flag(nes, CpuFlag::N, nes.cpu.data & 0x0080 != 0);
 }
 
+pub fn rla(nes: &mut Nes) {
+    let mut tmp = (nes.cpu.data as u16) << 1;
+    if cpu::get_flag(nes, CpuFlag::C) {
+        tmp |= 0x0001;
+    }
+    
+    cpu::set_flag(nes, CpuFlag::C, tmp & 0xff00 != 0);
+
+    if nes.cpu.addr_mode == addressing::imp as usize {
+        nes.cpu.ac = tmp as u8;
+    } else {
+        cpu::write(nes, nes.cpu.addr, tmp as u8);
+    }
+
+    nes.cpu.ac &= tmp as u8;
+    
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.ac & 0x00ff == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.ac & 0x0080 != 0);
+}
+
+pub fn rra(nes: &mut Nes) {
+    let mut tmp = (nes.cpu.data as u16) >> 1;
+    if cpu::get_flag(nes, CpuFlag::C) {
+        tmp |= 0x0080;
+    }
+    
+    cpu::set_flag(nes, CpuFlag::C, nes.cpu.data & 0x0001 != 0);
+
+    if nes.cpu.addr_mode == addressing::imp as usize {
+        nes.cpu.ac = tmp as u8;
+    } else {
+        cpu::write(nes, nes.cpu.addr, tmp as u8);
+    }
+
+    // ADD
+    nes.cpu.ac |= tmp as u8;
+    
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.ac & 0x00ff == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.ac & 0x0080 != 0);
+}
+
 pub fn sax(nes: &mut Nes) {
     let val = nes.cpu.ac & nes.cpu.x;
     cpu::write(nes, nes.cpu.addr, val);
-    //cpu::set_flag(nes, CpuFlag::Z, val == 0);
-    //cpu::set_flag(nes, CpuFlag::N, val & 0x0080 != 0);
+}
+
+pub fn slo(nes: &mut Nes) {
+    let tmp = (nes.cpu.data as u16) << 1;
+    
+    cpu::set_flag(nes, CpuFlag::C, tmp & 0xff00 != 0);
+
+    if nes.cpu.addr_mode == addressing::imp as usize {
+        nes.cpu.ac = tmp as u8;
+    } else {
+        cpu::write(nes, nes.cpu.addr, tmp as u8);
+    }
+
+    nes.cpu.ac |= tmp as u8;
+    
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.ac & 0x00ff == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.ac & 0x0080 != 0);
+}
+
+pub fn sre(nes: &mut Nes) {
+    cpu::set_flag(nes, CpuFlag::C, nes.cpu.data & 0x0001 != 0);
+
+    let tmp = (nes.cpu.data as u16) >> 1;
+
+    if nes.cpu.addr_mode == addressing::imp as usize {
+        nes.cpu.ac = tmp as u8;
+    } else {
+        cpu::write(nes, nes.cpu.addr, tmp as u8);
+    }
+
+    nes.cpu.ac ^= tmp as u8;
+
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.ac & 0x00ff == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.ac & 0x0080 != 0);
+
 }
 
 pub fn top(nes: &mut Nes) {
