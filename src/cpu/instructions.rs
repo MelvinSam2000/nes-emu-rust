@@ -420,3 +420,36 @@ pub fn xxx(_nes: &mut Nes) {
     return;
 }
 
+// UNOFFICIAL OPCODES:
+
+pub fn dcp(nes: &mut Nes) {
+    dec(nes);
+    cmp(nes);
+    //nes.cpu.data = nes.cpu.data.wrapping_sub(1);
+    //cpu::write(nes, nes.cpu.addr, nes.cpu.data);
+    //cpu::set_flag(nes, CpuFlag::Z, nes.cpu.data == 0);
+    //cpu::set_flag(nes, CpuFlag::N, nes.cpu.data & 0x0080 != 0);
+}
+
+pub fn dop(nes: &mut Nes) {
+    nes.cpu.pc = nes.cpu.pc.wrapping_add(1);
+}
+
+pub fn lax(nes: &mut Nes) {
+    nes.cpu.ac = nes.cpu.data;
+    nes.cpu.x = nes.cpu.data;
+    cpu::set_flag(nes, CpuFlag::Z, nes.cpu.data == 0);
+    cpu::set_flag(nes, CpuFlag::N, nes.cpu.data & 0x0080 != 0);
+}
+
+pub fn sax(nes: &mut Nes) {
+    let val = nes.cpu.ac & nes.cpu.x;
+    cpu::write(nes, nes.cpu.addr, val);
+    //cpu::set_flag(nes, CpuFlag::Z, val == 0);
+    //cpu::set_flag(nes, CpuFlag::N, val & 0x0080 != 0);
+}
+
+pub fn top(nes: &mut Nes) {
+    nes.cpu.pc = nes.cpu.pc.wrapping_add(2);
+}
+

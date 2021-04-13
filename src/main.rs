@@ -17,16 +17,57 @@ mod buscpu;
 mod ppu;
 mod busppu;
 
+extern crate image as im;
+extern crate piston_window;
+
 use nes::Nes;
+use piston_window::*;
 
+const WIDTH: u32 = 255;
+const HEIGHT: u32 = 240;
 
-fn main() {
+pub fn main() {
 
     let mut nes = Nes::new();
-    nes.load("games/nestest.nes".to_string());
-    nes.reset();
-    for _i in 0..1000 {
-        nes.clock();
+
+    let mut window: PistonWindow = WindowSettings::new("NES EMULATOR", (WIDTH, HEIGHT))
+        .exit_on_esc(true)
+        .build()
+        .unwrap();
+
+    let mut canvas = im::ImageBuffer::new(WIDTH, HEIGHT);
+    let mut texture_context = TextureContext {
+        factory: window.factory.clone(),
+        encoder: window.factory.create_command_buffer().into()
+    };
+
+    let mut texture: G2dTexture = Texture::from_image(
+            &mut texture_context,
+            &canvas,
+            &TextureSettings::new()
+        ).unwrap();
+
+    while let Some(e) = window.next() {
+        if let Some(_) = e.render_args() {
+            texture.update(&mut texture_context, &canvas).unwrap();
+            window.draw_2d(&e, |c, g, device| {
+
+                texture_context.encoder.flush(device);
+
+                // Draw screen
+                for y in 0..HEIGHT {
+                    for x in 0..WIDTH {
+                        let (r, g, b) = nes.screen_pixel(y as u8, x as u8);
+                        canvas.put_pixel(x, y, im::Rgba([r, g, b, 255]));
+                    }
+                }
+                // Clock nes
+                nes.clock();
+
+                clear([1.0; 4], g);
+                image(&texture, c.transform, g);
+            });
+        }
     }
-    print!("Hello");
+
 }

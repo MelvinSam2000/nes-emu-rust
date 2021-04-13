@@ -3,6 +3,7 @@ use std::fs::read;
 use crate::cpu::cpu::Cpu;
 use crate::cpu::cpu;
 use crate::ppu::Ppu;
+use crate::ppu;
 use crate::buscpu::BusCpu;
 use crate::busppu::BusPpu;
 use crate::cartridge::Cartridge;
@@ -14,6 +15,10 @@ pub struct Nes {
     pub cartridge: Cartridge,
     pub buscpu: BusCpu,
     pub busppu: BusPpu,
+    // io
+    pub screen: [[(u8, u8, u8); 255]; 240],
+    // helper
+    pub clock_count: u8,
 }
 
 impl Nes {
@@ -29,8 +34,13 @@ impl Nes {
         let buscpu = BusCpu::new();
         let busppu = BusPpu::new();
 
+        // I/O devices
+        let screen: [[(u8, u8, u8); 255]; 240] = [[(0, 0, 0); 255]; 240];
+
         return Self {
-            cpu, ppu, cartridge, buscpu, busppu
+            cpu, ppu, cartridge, buscpu, busppu,
+            screen,
+            clock_count: 0
         };
     }
 
@@ -39,7 +49,11 @@ impl Nes {
     }
 
     pub fn clock(&mut self) {
-        cpu::clock(self);
+        if self.clock_count % 3 == 0 {
+            //cpu::clock(self);
+        }
+        ppu::clock(self);
+        self.clock_count.wrapping_add(1);
     }
 
     pub fn load(&mut self, nes_file_path: String) {
@@ -77,6 +91,10 @@ impl Nes {
         self.cpu.debug = true;
         self.cpu.debug_ram = prg;
         self.cpu.debug_ram.resize(0x10000, 0);
+    }
+
+    pub fn screen_pixel(&self, i: u8, j: u8) -> (u8, u8, u8) {
+        return self.screen[i as usize][j as usize];
     }
 
 }
