@@ -113,18 +113,22 @@ mod cputest {
         nes.reset();
         nes.cpu.pc = 0xc000;
         cpu::step(&mut nes);
+
+        let mut logs: Vec<String> = vec![];
+
         for _i in 0..2000 {
             let log = cpu::step(&mut nes);
+            logs.push(log);
+        }
 
-            let mut file = OpenOptions::new()
+        let mut file = OpenOptions::new()
+                .create(true)
                 .write(true)
-                .append(true)
                 .open("logs/cpu.log")
                 .unwrap();
 
-            if let Err(e) = writeln!(file, "{}", log) {
-                eprintln!("Couldn't write to file: {}", e);
-            }
+        if let Err(e) = writeln!(file, "{}", logs.join("\n")) {
+            eprintln!("Couldn't write to file: {}", e);
         }
         assert_eq!(1, 1);
     }

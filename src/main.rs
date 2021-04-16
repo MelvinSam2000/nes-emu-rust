@@ -5,6 +5,14 @@ mod cpu {
     pub mod addressing;
     pub mod decode;
 }
+mod ppu {
+    pub mod ppu;
+    pub mod regcontrol;
+    pub mod regmask;
+    pub mod regstatus;
+    pub mod regaddrdata;
+    pub mod regloopy;
+}
 mod mappers {
     pub mod mapper;
     pub mod nrom;
@@ -12,18 +20,23 @@ mod mappers {
 mod tests {
     pub mod cputest;
 }
+mod events {
+    pub mod drawevent;
+}
 mod cartridge;
 mod buscpu;
-mod ppu;
 mod busppu;
 
 extern crate image as im;
 extern crate piston_window;
+extern crate time;
 
 use nes::Nes;
 use piston_window::*;
+use events::drawevent::DrawEvent;
+use time::PreciseTime;
 
-const WIDTH: u32 = 255;
+const WIDTH: u32 = 256;
 const HEIGHT: u32 = 240;
 
 pub fn main() {
@@ -36,7 +49,7 @@ pub fn main() {
         .exit_on_esc(true)
         .build()
         .unwrap();
-    window.set_event_settings(EventSettings::new().max_fps(60));
+    window.set_event_settings(EventSettings::new().bench_mode(true));
 
     let mut canvas = im::ImageBuffer::new(WIDTH, HEIGHT);
     let mut texture_context = TextureContext {
@@ -49,6 +62,7 @@ pub fn main() {
             &canvas,
             &TextureSettings::new()
         ).unwrap();
+    
 
     while let Some(e) = window.next() {
         if let Some(_) = e.render_args() {
@@ -57,17 +71,22 @@ pub fn main() {
 
                 texture_context.encoder.flush(device);
 
-                // Draw screen
-                for y in 0..HEIGHT {
-                    for x in 0..WIDTH {
-                        let (r, g, b) = nes.screen_pixel(y as u8, x as u8);
-                        canvas.put_pixel(x, y, im::Rgba([r, g, b, 255]));
-                    }
+                
+                for evt in nes.get_draw_events() {
+                    let (r, g, b) = evt.rgb;
+                    let (y, x) = evt.position;
+                    canvas.put_pixel(x as u32, y as u32, im::Rgba([r, g, b, 255]));
                 }
-                // Clock nes
-                nes.clock();
-
-                clear([1.0; 4], g);
+                //let start = PreciseTime::now();
+                for _ in 0..10000 {
+                    nes.clock();
+                }
+                
+                
+                //let end = PreciseTime::now();
+                //println!("\r{}", start.to(end).num_microseconds().unwrap());
+                
+                //clear([1.0; 4], g);
                 image(&texture, c.transform, g);
             });
         }
