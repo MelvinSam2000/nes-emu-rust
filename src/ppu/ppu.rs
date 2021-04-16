@@ -44,7 +44,7 @@ impl Ppu {
     }
 }
 
-pub static _PALETTE_TO_RGB: [(u8,u8,u8); 64] = [
+pub static PALETTE_TO_RGB: [(u8,u8,u8); 64] = [
    (0x80, 0x80, 0x80), (0x00, 0x3D, 0xA6), (0x00, 0x12, 0xB0), (0x44, 0x00, 0x96), (0xA1, 0x00, 0x5E),
    (0xC7, 0x00, 0x28), (0xBA, 0x06, 0x00), (0x8C, 0x17, 0x00), (0x5C, 0x2F, 0x00), (0x10, 0x45, 0x00),
    (0x05, 0x4A, 0x00), (0x00, 0x47, 0x2E), (0x00, 0x41, 0x66), (0x00, 0x00, 0x00), (0x05, 0x05, 0x05),
@@ -95,11 +95,13 @@ pub fn clock(nes: &mut Nes) {
 
 
     if nes.ppu.scan_line < 240 && nes.ppu.scan_cycle < 256 {
+        /*
         let (i, j) = (nes.ppu.scan_line as u8, nes.ppu.scan_cycle as u8);
         nes.submit_draw_event(DrawEvent {
             position: (i, j),
             rgb: if rand::random() { (255, 255, 255) } else { (0, 0, 0) },
         });
+        */
     }
 }
 
@@ -118,6 +120,9 @@ pub fn read_ppu_reg(nes: &mut Nes, addr: u16) -> u8 {
             return 0x00;
         },
         PPUSTATUS => {
+            // remove this later
+            nes.ppu.reg_status.set_vblank(true);
+
             let data = nes.ppu.reg_status.reg;
             nes.ppu.reg_status.set_vblank(false);
             nes.ppu.reg_addr_data.set_latch(false);
@@ -170,4 +175,64 @@ pub fn write_ppu_reg(nes: &mut Nes, addr: u16, data: u8) {
             return;
         }
     }
+
+    
 }
+
+pub fn draw_chr(nes: &mut Nes, bank: u16) {
+    
+    for tile_x in 0..16 {
+        for tile_y in 0..16 {
+            let offset = tile_x*256 + tile_y*16;
+            for row in 0..8 {
+                let mut tile_lsb = read(nes, bank*0x1000 + offset + row);
+                let mut tile_msb = read(nes, bank*0x1000 + offset + row + 8);
+                for col in 0..8 {
+                    let pixel = (tile_msb & 0x01) + (tile_lsb & 0x01);
+                    tile_lsb >>= 1;
+                    tile_msb >>= 1;
+                    let rgb = match pixel {
+                        0 => (0, 0, 0),
+                        1 => (255, 0, 0),
+                        2 => (0, 255, 0),
+                        3 => (0, 0, 255),
+                        _ => (255, 0, 255)
+                    };
+                    nes.submit_draw_event(DrawEvent { position: (
+                        
+                        
+                        (tile_y * 8 + (7 - col)) as u8, 
+                        (tile_x * 8 + row) as u8,
+                    ), rgb})
+                }
+            }
+        }
+    }
+}
+
+pub fn show_tile(nes: &mut Nes, bank: u16, tile_n: u16) {
+    assert!(bank <= 1);
+
+    let bank = bank * 0x1000;
+ 
+    for y in 0..8 {
+        let offset: u16 = bank + tile_n * 16;
+        read(nes, offset);
+        let mut upper = read(nes, offset);
+        let mut lower = read(nes, offset + 8);
+ 
+        for x in (0..=7).rev() {
+            let value = (1 & upper) << 1 | (1 & lower);
+            upper = upper >> 1;
+            lower = lower >> 1;
+            let rgb = match value {
+                0 => PALETTE_TO_RGB[0x01],
+                1 => PALETTE_TO_RGB[0x23],
+                2 => PALETTE_TO_RGB[0x27],
+                3 => PALETTE_TO_RGB[0x30],
+                _ => panic!("can't be"),
+            };
+            nes.submit_draw_event(DrawEvent {position: (x + 16*tile_n as u8 % 8, y), rgb});
+        }
+    }
+ }

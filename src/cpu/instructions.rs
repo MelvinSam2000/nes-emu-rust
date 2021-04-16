@@ -40,7 +40,7 @@ pub fn asl(nes: &mut Nes) {
 pub fn bcc(nes: &mut Nes) {
     if !cpu::get_flag(nes, CpuFlag::C) {
         nes.cpu.cycles += 1;
-        let addr = nes.cpu.pc + nes.cpu.addr;
+        let addr = nes.cpu.pc.wrapping_add(nes.cpu.addr);
         nes.cpu.pc = addr;
     }
 }
@@ -48,7 +48,7 @@ pub fn bcc(nes: &mut Nes) {
 pub fn bcs(nes: &mut Nes) {
     if cpu::get_flag(nes, CpuFlag::C) {
         nes.cpu.cycles += 1;
-        let addr = nes.cpu.pc + nes.cpu.addr;
+        let addr = nes.cpu.pc.wrapping_add(nes.cpu.addr);
         nes.cpu.pc = addr;
     }
 }
@@ -56,7 +56,7 @@ pub fn bcs(nes: &mut Nes) {
 pub fn beq(nes: &mut Nes) {
     if cpu::get_flag(nes, CpuFlag::Z) {
         nes.cpu.cycles += 1;
-        let addr = nes.cpu.pc + nes.cpu.addr;
+        let addr = nes.cpu.pc.wrapping_add(nes.cpu.addr);
         nes.cpu.pc = addr;
     }
 }

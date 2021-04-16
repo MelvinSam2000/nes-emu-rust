@@ -65,6 +65,7 @@ impl Nes {
             Ok(v) => v
         };
         self.cartridge.load_cartridge(file_bytes);
+        ppu::draw_chr(self, 0);
     }
 
     pub fn load_debug(&mut self, prg: Vec<u8>) {

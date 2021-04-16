@@ -74,7 +74,7 @@ pub fn main() {
                 
                 for evt in nes.get_draw_events() {
                     let (r, g, b) = evt.rgb;
-                    let (y, x) = evt.position;
+                    let (x, y) = evt.position;
                     canvas.put_pixel(x as u32, y as u32, im::Rgba([r, g, b, 255]));
                 }
                 //let start = PreciseTime::now();
