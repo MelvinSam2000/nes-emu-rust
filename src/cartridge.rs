@@ -1,13 +1,21 @@
 use crate::mappers::mapper::Mapper;
 use crate::mappers::nrom::NROM;
 
+use std::fs::OpenOptions;
+use std::io::Write;
+
 pub struct Cartridge {
     pub prgmem: Vec<u8>,
     pub chrmem: Vec<u8>,
     pub prg_banks: u8,
     pub chr_banks: u8,
     pub mapper: Mapper,
-    pub mirroring: u8,
+    pub mirroring: Mirroring,
+}
+
+pub enum Mirroring {
+    HORIZONTAL,
+    VERTICAL
 }
 
 impl Cartridge {
@@ -19,7 +27,7 @@ impl Cartridge {
             prg_banks: 0,
             chr_banks: 0,
             mapper: NROM,
-            mirroring: 0,
+            mirroring: Mirroring::HORIZONTAL,
         }
     }
 
@@ -32,7 +40,7 @@ impl Cartridge {
         let prg_size = 0x4000*prg_banks;
         let chr_size = 0x2000*chr_banks;
 
-        self.mirroring = if mirroring { 1 } else { 0 };
+        self.mirroring = if mirroring { Mirroring::HORIZONTAL } else { Mirroring::VERTICAL };
 
         // resize cartridge roms
         self.prg_banks = prg_banks as u8;
@@ -48,9 +56,12 @@ impl Cartridge {
         for i in 0..prg_size as u16 {
             self.prgmem[i as usize] = hexdump[(offset + i) as usize];
         }
+
         for i in 0..chr_size as u16 {
             self.chrmem[i as usize] = hexdump[(prg_size as u16 + offset + i) as usize];
         }
+
+        
     }
 
     pub fn prg_read(&mut self, addr: u16) -> u8 {
@@ -70,7 +81,7 @@ impl Cartridge {
 
     pub fn chr_write(&mut self, addr: u16, data: u8) {
         let maddr = (self.mapper.write_chr)(self, addr);
-        self.prgmem[maddr as usize] = data;
+        self.chrmem[maddr as usize] = data;
     }
 }
 

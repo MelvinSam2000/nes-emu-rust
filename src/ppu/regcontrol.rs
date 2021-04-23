@@ -3,8 +3,8 @@ pub struct RegControl {
 }
 
 enum Flag {
-    Nlo = 1 << 0,   // Nametable select (low bit)
-    Nhi = 1 << 1,   // Nametable select (high bit)
+    Nx = 1 << 0,   // Nametable select (x)
+    Ny = 1 << 1,   // Nametable select (y)
     I = 1 << 2,     // Increment mode
     S = 1 << 3,     // Sprite tile select
     B = 1 << 4,     // Background tile select
@@ -31,6 +31,30 @@ impl RegControl {
 
     pub fn is_inc_mode(&mut self) -> bool {
         return self.get_flag(Flag::I);
+    }
+
+    pub fn get_name_x(&self) -> bool {
+        return self.get_flag(Flag::Nx);
+    }
+
+    pub fn get_name_y(&self) -> bool {
+        return self.get_flag(Flag::Ny);
+    }
+
+    pub fn set_name_x(&mut self, val: bool) {
+        self.set_flag(Flag::Nx, val);
+    }
+
+    pub fn set_name_y(&mut self, val: bool) {
+        self.set_flag(Flag::Ny, val);
+    }
+
+    pub fn get_bg(&self) -> bool {
+        return self.get_flag(Flag::B);
+    }
+
+    pub fn set_bg(&mut self, val: bool) {
+        self.set_flag(Flag::B, val);
     }
 
     fn set_flag(&mut self, flag: Flag, val: bool) {

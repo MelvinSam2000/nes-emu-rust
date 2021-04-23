@@ -59,15 +59,24 @@ impl Nes {
         self.clock_count = self.clock_count.wrapping_add(1);
     }
 
+    pub fn clock_debug(&mut self) {
+        if self.clock_count % 10 == 0 {
+            let log = cpu::step(self);
+            println!("{:?}", log);
+        }
+        ppu::clock(self);
+        self.clock_count = self.clock_count.wrapping_add(1);
+    }
+
     pub fn load(&mut self, nes_file_path: String) {
         let file_bytes: Vec<u8> = match read(nes_file_path) {
             Err(_e) => vec![],
             Ok(v) => v
         };
         self.cartridge.load_cartridge(file_bytes);
-        ppu::draw_chr(self, 0);
     }
 
+    // for running small programns, not from ines roms
     pub fn load_debug(&mut self, prg: Vec<u8>) {
         self.cpu.debug = true;
         self.cpu.debug_ram = prg;

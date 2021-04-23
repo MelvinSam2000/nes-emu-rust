@@ -21,6 +21,15 @@ impl RegMask {
         };
     }
 
+    pub fn render_bg_enabled(&self) -> bool {
+        // TODO: change later
+        return true;//self.get_flag(Flag::b);
+    }
+
+    pub fn render_spr_enabled(&self) -> bool {
+        return self.get_flag(Flag::s);
+    }
+
     fn set_flag(&mut self, flag: Flag, val: bool) {
         if val {
             self.reg |= flag as u8;

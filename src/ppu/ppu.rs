@@ -14,15 +14,25 @@ use crate::cpu::cpu;
 pub struct Ppu {
     pub oam: [u8; 256],
     // screen scanning
-    pub scan_line: u16,
+    pub scan_line: i16,
     pub scan_cycle: u16,
     // ppu registers for cpu communication
     pub reg_control: RegControl,
     pub reg_mask: RegMask,
     pub reg_status: RegStatus,
     pub reg_addr_data: RegAddrData,
-    pub vram_addr: RegLoopy,
-    pub tram_addr: RegLoopy,
+    // helper variables
+    pub loopy_v: RegLoopy,
+    pub loopy_t: RegLoopy,
+    pub fine_x: u8,
+    pub bg_next_tile_id: u8,
+    pub bg_next_tile_attr: u8,
+    pub bg_next_tile_lsb: u8,
+    pub bg_next_tile_msb: u8,
+    pub bg_shift_pat_lo: u16,
+    pub bg_shift_pat_hi: u16,
+    pub bg_shift_att_lo: u16,
+    pub bg_shift_att_hi: u16,
 }
 
 impl Ppu {
@@ -31,33 +41,45 @@ impl Ppu {
         return Self {
             oam: [0; 256],
 
-            scan_line: 0,
+            scan_line: -1,
             scan_cycle: 0,
 
             reg_control: RegControl::new(),
             reg_mask: RegMask::new(),
             reg_status: RegStatus::new(),
             reg_addr_data: RegAddrData::new(),
-            vram_addr: RegLoopy::new(),
-            tram_addr: RegLoopy::new(),
+            
+            loopy_v: RegLoopy::new(),
+            loopy_t: RegLoopy::new(),
+            fine_x: 0x00,
+
+            bg_next_tile_id: 0x00,
+            bg_next_tile_attr: 0x00,
+            bg_next_tile_lsb: 0x00,
+            bg_next_tile_msb: 0x00,
+
+            bg_shift_pat_lo: 0x0000,
+            bg_shift_pat_hi: 0x0000,
+            bg_shift_att_lo: 0x0000,
+            bg_shift_att_hi: 0x0000,
         };
     }
 }
 
-pub static PALETTE_TO_RGB: [(u8,u8,u8); 64] = [
-   (0x80, 0x80, 0x80), (0x00, 0x3D, 0xA6), (0x00, 0x12, 0xB0), (0x44, 0x00, 0x96), (0xA1, 0x00, 0x5E),
-   (0xC7, 0x00, 0x28), (0xBA, 0x06, 0x00), (0x8C, 0x17, 0x00), (0x5C, 0x2F, 0x00), (0x10, 0x45, 0x00),
-   (0x05, 0x4A, 0x00), (0x00, 0x47, 0x2E), (0x00, 0x41, 0x66), (0x00, 0x00, 0x00), (0x05, 0x05, 0x05),
-   (0x05, 0x05, 0x05), (0xC7, 0xC7, 0xC7), (0x00, 0x77, 0xFF), (0x21, 0x55, 0xFF), (0x82, 0x37, 0xFA),
-   (0xEB, 0x2F, 0xB5), (0xFF, 0x29, 0x50), (0xFF, 0x22, 0x00), (0xD6, 0x32, 0x00), (0xC4, 0x62, 0x00),
-   (0x35, 0x80, 0x00), (0x05, 0x8F, 0x00), (0x00, 0x8A, 0x55), (0x00, 0x99, 0xCC), (0x21, 0x21, 0x21),
-   (0x09, 0x09, 0x09), (0x09, 0x09, 0x09), (0xFF, 0xFF, 0xFF), (0x0F, 0xD7, 0xFF), (0x69, 0xA2, 0xFF),
-   (0xD4, 0x80, 0xFF), (0xFF, 0x45, 0xF3), (0xFF, 0x61, 0x8B), (0xFF, 0x88, 0x33), (0xFF, 0x9C, 0x12),
-   (0xFA, 0xBC, 0x20), (0x9F, 0xE3, 0x0E), (0x2B, 0xF0, 0x35), (0x0C, 0xF0, 0xA4), (0x05, 0xFB, 0xFF),
-   (0x5E, 0x5E, 0x5E), (0x0D, 0x0D, 0x0D), (0x0D, 0x0D, 0x0D), (0xFF, 0xFF, 0xFF), (0xA6, 0xFC, 0xFF),
-   (0xB3, 0xEC, 0xFF), (0xDA, 0xAB, 0xEB), (0xFF, 0xA8, 0xF9), (0xFF, 0xAB, 0xB3), (0xFF, 0xD2, 0xB0),
-   (0xFF, 0xEF, 0xA6), (0xFF, 0xF7, 0x9C), (0xD7, 0xE8, 0x95), (0xA6, 0xED, 0xAF), (0xA2, 0xF2, 0xDA),
-   (0x99, 0xFF, 0xFC), (0xDD, 0xDD, 0xDD), (0x11, 0x11, 0x11), (0x11, 0x11, 0x11)
+pub static PALETTE_TO_RGB: [(u8, u8, u8); 64] = [
+   (0x80, 0x80, 0x80), (0x00, 0x3d, 0xa6), (0x00, 0x12, 0xb0), (0x44, 0x00, 0x96), (0xa1, 0x00, 0x5e),
+   (0xc7, 0x00, 0x28), (0xba, 0x06, 0x00), (0x8c, 0x17, 0x00), (0x5c, 0x2f, 0x00), (0x10, 0x45, 0x00),
+   (0x05, 0x4a, 0x00), (0x00, 0x47, 0x2e), (0x00, 0x41, 0x66), (0x00, 0x00, 0x00), (0x05, 0x05, 0x05),
+   (0x05, 0x05, 0x05), (0xc7, 0xc7, 0xc7), (0x00, 0x77, 0xff), (0x21, 0x55, 0xff), (0x82, 0x37, 0xfa),
+   (0xeb, 0x2f, 0xb5), (0xff, 0x29, 0x50), (0xff, 0x22, 0x00), (0xd6, 0x32, 0x00), (0xc4, 0x62, 0x00),
+   (0x35, 0x80, 0x00), (0x05, 0x8f, 0x00), (0x00, 0x8a, 0x55), (0x00, 0x99, 0xcc), (0x21, 0x21, 0x21),
+   (0x09, 0x09, 0x09), (0x09, 0x09, 0x09), (0xff, 0xff, 0xff), (0x0f, 0xd7, 0xff), (0x69, 0xa2, 0xff),
+   (0xd4, 0x80, 0xff), (0xff, 0x45, 0xf3), (0xff, 0x61, 0x8b), (0xff, 0x88, 0x33), (0xff, 0x9c, 0x12),
+   (0xfa, 0xbc, 0x20), (0x9f, 0xe3, 0x0e), (0x2b, 0xf0, 0x35), (0x0c, 0xf0, 0xa4), (0x05, 0xfb, 0xff),
+   (0x5e, 0x5e, 0x5e), (0x0d, 0x0d, 0x0d), (0x0d, 0x0d, 0x0d), (0xff, 0xff, 0xff), (0xa6, 0xfc, 0xff),
+   (0xb3, 0xec, 0xff), (0xda, 0xab, 0xeb), (0xff, 0xa8, 0xf9), (0xff, 0xab, 0xb3), (0xff, 0xd2, 0xb0),
+   (0xff, 0xef, 0xa6), (0xff, 0xf7, 0x9c), (0xd7, 0xe8, 0x95), (0xa6, 0xed, 0xaf), (0xa2, 0xf2, 0xda),
+   (0x99, 0xff, 0xfc), (0xdd, 0xdd, 0xdd), (0x11, 0x11, 0x11), (0x11, 0x11, 0x11)
 ];
 
 
@@ -73,36 +95,219 @@ const PPUDATA: u16 = 0x2007;
 
 pub fn clock(nes: &mut Nes) {
 
+    if nes.ppu.scan_line >= -1 && nes.ppu.scan_line < 240 {
+
+        if nes.ppu.scan_line == 0 && nes.ppu.scan_cycle == 0 {
+            nes.ppu.scan_cycle = 1;
+        }
+
+        if nes.ppu.scan_line == -1 && nes.ppu.scan_cycle == 1 {
+            nes.ppu.reg_status.set_vblank(false);
+        }
+
+        if (nes.ppu.scan_cycle >= 2 && nes.ppu.scan_cycle < 258) || (nes.ppu.scan_cycle >= 321 && nes.ppu.scan_cycle < 338) {
+            
+            update_shifters(nes);
+
+            match (nes.ppu.scan_cycle - 1) % 8 {
+                0 => {
+                    load_bg_shifters(nes);
+                    nes.ppu.bg_next_tile_id = read(nes, 0x2000 | (nes.ppu.loopy_v.reg & 0x0fff));
+                },
+                2 => {
+                    nes.ppu.bg_next_tile_attr = read(nes, 
+                        0x23c0 |
+                        ((nes.ppu.loopy_v.get_nametable_y() as u16) << 11) |
+                        ((nes.ppu.loopy_v.get_nametable_x() as u16) << 10) |
+                        ((nes.ppu.loopy_v.get_coarse_y() >> 2) << 3) |
+                        ((nes.ppu.loopy_v.get_coarse_x() >> 2))
+                    );
+                    if nes.ppu.loopy_v.get_coarse_y() & 0x02 != 0 {
+                        nes.ppu.bg_next_tile_attr >>= 4;
+                    }
+                    if nes.ppu.loopy_v.get_coarse_x() & 0x02 != 0 {
+                        nes.ppu.bg_next_tile_attr >>= 2;
+                    }
+                    nes.ppu.bg_next_tile_attr &= 0x0003;
+                },
+                4 => {
+                    nes.ppu.bg_next_tile_lsb = read(nes, 
+                        ((nes.ppu.reg_control.get_bg() as u16) << 12)
+                        .wrapping_add((nes.ppu.bg_next_tile_id as u16) << 4)
+                        .wrapping_add(nes.ppu.loopy_v.get_fine_y()));
+                },
+                6 => {
+                    nes.ppu.bg_next_tile_msb = read(nes, 
+                        ((nes.ppu.reg_control.get_bg() as u16) << 12)
+                        .wrapping_add((nes.ppu.bg_next_tile_id as u16) << 4)
+                        .wrapping_add(nes.ppu.loopy_v.get_fine_y())
+                        .wrapping_add(8));
+                },
+                7 => {
+                    incr_scroll_x(nes);
+                },
+                _ => {}
+            }
+
+            if nes.ppu.scan_cycle == 256 {
+                incr_scroll_y(nes);
+            }
+
+            if nes.ppu.scan_cycle == 257 {
+                load_bg_shifters(nes);
+                transfer_addr_x(nes);
+            }
+
+            if nes.ppu.scan_cycle == 338 || nes.ppu.scan_cycle == 340 {
+                nes.ppu.bg_next_tile_id = read(nes, 0x2000 | (nes.ppu.loopy_v.reg & 0x0fff));
+            }
+
+            if nes.ppu.scan_line == -1 && nes.ppu.scan_cycle >= 280 && nes.ppu.scan_cycle < 305 {
+                transfer_addr_y(nes);
+            }   
+        }
+    }
+
+    // Enter VBLANK
+    if nes.ppu.scan_line >= 241 && nes.ppu.scan_line < 261 {
+        if nes.ppu.scan_line == 241 && nes.ppu.scan_cycle == 1 {
+            nes.ppu.reg_status.set_vblank(true);
+            if nes.ppu.reg_control.is_nmi_enabled() {
+                cpu::nmi(nes);
+            }
+        }
+    }
+
+    
+    if nes.ppu.reg_mask.render_bg_enabled() 
+        && nes.ppu.scan_cycle > 0 && nes.ppu.scan_cycle <= 256
+        && nes.ppu.scan_line >= 0 && nes.ppu.scan_line < 240  {
+        let bit_mux = 0x8000 >> nes.ppu.fine_x;
+        let mut pixel = (nes.ppu.bg_shift_pat_lo & bit_mux != 0) as u8;
+        pixel |= ((nes.ppu.bg_shift_pat_hi & bit_mux != 0) as u8) << 1;
+        let mut palette = (nes.ppu.bg_shift_att_lo & bit_mux != 0) as u8;
+        palette |= ((nes.ppu.bg_shift_att_hi & bit_mux != 0) as u8) << 1;
+
+        let rgb = PALETTE_TO_RGB[(read(nes, 0x3F00 + ((palette << 2) + pixel) as u16) & 0x3F) as usize];
+
+        nes.submit_draw_event(DrawEvent {
+            position: ((nes.ppu.scan_cycle as u8).wrapping_sub(1), nes.ppu.scan_line as u8), rgb
+        });
+    }
+
+    nes.ppu.scan_cycle += 1;
+	if nes.ppu.scan_cycle >= 341 {
+		nes.ppu.scan_cycle = 0;
+		nes.ppu.scan_line += 1;
+		if nes.ppu.scan_line >= 261 {
+			nes.ppu.scan_line = -1;
+			//frame_complete = true;
+		}
+	}
+
+
+
+    // OLD
+    /*
     nes.ppu.scan_cycle += 1;
     
+    // Reset scan cycle counter
     if nes.ppu.scan_cycle == 341 {
         nes.ppu.scan_cycle = 0;
         nes.ppu.scan_line += 1;
     }
 
+    // Reset scan line counter
     if nes.ppu.scan_line == 262 {
         nes.ppu.scan_line = 0;
         nes.ppu.reg_status.set_vblank(false);
     }
 
-    if nes.ppu.scan_line == 241 {
+    // Enter VBLANK
+    if nes.ppu.scan_line == 242 && nes.ppu.scan_cycle == 1 {
+        nes.ppu.reg_status.set_vblank(true);
         if nes.ppu.reg_control.is_nmi_enabled() {
-            nes.ppu.reg_status.set_vblank(true);
             cpu::nmi(nes);
         }
     }
 
-
-
-    if nes.ppu.scan_line < 240 && nes.ppu.scan_cycle < 256 {
-        /*
-        let (i, j) = (nes.ppu.scan_line as u8, nes.ppu.scan_cycle as u8);
-        nes.submit_draw_event(DrawEvent {
-            position: (i, j),
-            rgb: if rand::random() { (255, 255, 255) } else { (0, 0, 0) },
-        });
-        */
+    // Advance and execute scan line operations
+    if nes.ppu.scan_line <= 241 {
+        let cycle = nes.ppu.scan_cycle;
+        update_shifters(nes);
+        if (cycle >= 2 && cycle < 258) || (cycle >= 321 && cycle < 338) {
+            match (cycle - 1) % 8 {
+                0 => {
+                    load_bg_shifters(nes);
+                    nes.ppu.bg_next_tile_id = read(nes, 0x2000 | (nes.ppu.loopy_v.reg & 0x0fff));
+                },
+                2 => {
+                    nes.ppu.bg_next_tile_attr = read(nes, 
+                        0x23c0 |
+                        ((nes.ppu.loopy_v.get_nametable_y() as u16) << 11) |
+                        ((nes.ppu.loopy_v.get_nametable_x() as u16) << 10) |
+                        ((nes.ppu.loopy_v.get_coarse_y() >> 2) << 3) |
+                        ((nes.ppu.loopy_v.get_coarse_x() >> 2))
+                    );
+                    if nes.ppu.loopy_v.get_coarse_y() & 0x02 != 0 {
+                        nes.ppu.bg_next_tile_attr >>= 4;
+                    }
+                    if nes.ppu.loopy_v.get_coarse_x() & 0x02 != 0 {
+                        nes.ppu.bg_next_tile_attr >>= 2;
+                    }
+                    nes.ppu.bg_next_tile_attr &= 0x0003;
+                },
+                4 => {
+                    nes.ppu.bg_next_tile_lsb = read(nes, 
+                        ((nes.ppu.reg_control.get_bg() as u16) << 12)
+                        .wrapping_add((nes.ppu.bg_next_tile_id as u16) << 4)
+                        .wrapping_add(nes.ppu.loopy_v.get_fine_y()));
+                },
+                6 => {
+                    nes.ppu.bg_next_tile_msb = read(nes, 
+                        ((nes.ppu.reg_control.get_bg() as u16) << 12)
+                        .wrapping_add((nes.ppu.bg_next_tile_id as u16) << 4)
+                        .wrapping_add(nes.ppu.loopy_v.get_fine_y())
+                        .wrapping_add(8));
+                },
+                7 => {
+                    incr_scroll_x(nes);
+                },
+                _ => {}
+            }
+        }
     }
+
+    if nes.ppu.scan_cycle == 256 {
+        incr_scroll_x(nes);
+    }
+
+    if nes.ppu.scan_cycle == 257 {
+        transfer_addr_x(nes);
+    }
+
+    if nes.ppu.scan_line == 0 && nes.ppu.scan_cycle >= 280 && nes.ppu.scan_cycle < 305 {
+        transfer_addr_y(nes);
+    }
+
+    // Render background
+    if nes.ppu.scan_line < 240 && nes.ppu.scan_cycle < 256 {
+        if nes.ppu.reg_mask.render_bg_enabled() {
+            let bit_mux = 0x8000 >> nes.ppu.fine_x;
+            let mut pixel = (nes.ppu.bg_shift_pat_lo & bit_mux != 0) as u8;
+            pixel |= ((nes.ppu.bg_shift_pat_hi & bit_mux != 0) as u8) << 1;
+            let mut palette = (nes.ppu.bg_shift_att_lo & bit_mux != 0) as u8;
+            palette |= ((nes.ppu.bg_shift_att_hi & bit_mux != 0) as u8) << 1;
+    
+            let rgb = PALETTE_TO_RGB[(read(nes, 0x3F00 + ((palette << 2) + pixel) as u16) & 0x3F) as usize];
+    
+            nes.submit_draw_event(DrawEvent {
+                position: ((nes.ppu.scan_cycle as u8).wrapping_sub(1), nes.ppu.scan_line as u8), rgb
+            });
+        }
+    }
+    */
+    
 }
 
 pub fn read(nes: &mut Nes, addr: u16) -> u8 {
@@ -120,9 +325,6 @@ pub fn read_ppu_reg(nes: &mut Nes, addr: u16) -> u8 {
             return 0x00;
         },
         PPUSTATUS => {
-            // remove this later
-            nes.ppu.reg_status.set_vblank(true);
-
             let data = nes.ppu.reg_status.reg;
             nes.ppu.reg_status.set_vblank(false);
             nes.ppu.reg_addr_data.set_latch(false);
@@ -152,12 +354,21 @@ pub fn write_ppu_reg(nes: &mut Nes, addr: u16, data: u8) {
         },
         PPUCTRL => {
             nes.ppu.reg_control.reg = data;
+            nes.ppu.loopy_t.set_nametable_x(nes.ppu.reg_control.get_name_x());
+            nes.ppu.loopy_t.set_nametable_y(nes.ppu.reg_control.get_name_y());
         },
         PPUMASK => {
             nes.ppu.reg_mask.reg = data;
         },
         PPUSCROLL => {
-
+            if nes.ppu.reg_addr_data.latch {
+                nes.ppu.fine_x = data & 0x07;
+                nes.ppu.loopy_t.set_coarse_x(data >> 3);
+            } else {
+                nes.ppu.loopy_t.set_fine_y(data & 0x07);
+                nes.ppu.loopy_t.set_coarse_x(data >> 3);
+            }
+            nes.ppu.reg_addr_data.flip_latch();
         },
         OAMADDR => {
 
@@ -166,10 +377,10 @@ pub fn write_ppu_reg(nes: &mut Nes, addr: u16, data: u8) {
 
         },
         PPUADDR => {
-            return ppu::regaddrdata::write_addr(nes, data);
+            ppu::regaddrdata::write_addr(nes, data);
         },
         PPUDATA => {
-
+            ppu::regaddrdata::write_data(nes, data);
         }
         _ => {
             return;
@@ -210,29 +421,62 @@ pub fn draw_chr(nes: &mut Nes, bank: u16) {
     }
 }
 
-pub fn show_tile(nes: &mut Nes, bank: u16, tile_n: u16) {
-    assert!(bank <= 1);
-
-    let bank = bank * 0x1000;
- 
-    for y in 0..8 {
-        let offset: u16 = bank + tile_n * 16;
-        read(nes, offset);
-        let mut upper = read(nes, offset);
-        let mut lower = read(nes, offset + 8);
- 
-        for x in (0..=7).rev() {
-            let value = (1 & upper) << 1 | (1 & lower);
-            upper = upper >> 1;
-            lower = lower >> 1;
-            let rgb = match value {
-                0 => PALETTE_TO_RGB[0x01],
-                1 => PALETTE_TO_RGB[0x23],
-                2 => PALETTE_TO_RGB[0x27],
-                3 => PALETTE_TO_RGB[0x30],
-                _ => panic!("can't be"),
-            };
-            nes.submit_draw_event(DrawEvent {position: (x + 16*tile_n as u8 % 8, y), rgb});
+// scroll helper methods
+fn incr_scroll_x(nes: &mut Nes) {
+    if nes.ppu.reg_mask.render_bg_enabled() || nes.ppu.reg_mask.render_spr_enabled() {
+        if nes.ppu.loopy_v.get_coarse_x() == 31 {
+            nes.ppu.loopy_v.set_coarse_x(0);
+            nes.ppu.loopy_v.set_nametable_x(!nes.ppu.loopy_v.get_nametable_x());
+        } else {
+            nes.ppu.loopy_v.set_coarse_x(nes.ppu.loopy_v.get_coarse_x().wrapping_add(1) as u8);
         }
     }
- }
+}
+
+fn incr_scroll_y(nes: &mut Nes) {
+    if nes.ppu.reg_mask.render_bg_enabled() || nes.ppu.reg_mask.render_spr_enabled() {
+        if nes.ppu.loopy_v.get_fine_y() < 7 {
+            nes.ppu.loopy_v.set_fine_y(nes.ppu.loopy_v.get_fine_y().wrapping_add(1) as u8);
+        } else {
+            nes.ppu.loopy_v.set_fine_y(0);
+            if nes.ppu.loopy_v.get_coarse_y() == 29 {
+                nes.ppu.loopy_v.set_nametable_y(!nes.ppu.loopy_v.get_nametable_y());
+            } else if nes.ppu.loopy_v.get_coarse_y() == 31 {
+                nes.ppu.loopy_v.set_coarse_y(0);
+            } else {
+                nes.ppu.loopy_v.set_coarse_y(nes.ppu.loopy_v.get_coarse_y().wrapping_add(1) as u8);
+            }
+        }
+    }
+}
+
+fn transfer_addr_x(nes: &mut Nes) {
+    if nes.ppu.reg_mask.render_bg_enabled() || nes.ppu.reg_mask.render_spr_enabled() {
+        nes.ppu.loopy_v.set_coarse_x(nes.ppu.loopy_t.get_coarse_x() as u8);
+        nes.ppu.loopy_v.set_nametable_x(nes.ppu.loopy_t.get_nametable_x());
+    }
+}
+
+fn transfer_addr_y(nes: &mut Nes) {
+    if nes.ppu.reg_mask.render_bg_enabled() || nes.ppu.reg_mask.render_spr_enabled() {
+        nes.ppu.loopy_v.set_coarse_y(nes.ppu.loopy_t.get_coarse_y() as u8);
+        nes.ppu.loopy_v.set_nametable_y(nes.ppu.loopy_t.get_nametable_y());
+        nes.ppu.loopy_v.set_fine_y(nes.ppu.loopy_t.get_fine_y() as u8);
+    }
+}
+
+fn load_bg_shifters(nes: &mut Nes) {
+    nes.ppu.bg_shift_pat_lo = (nes.ppu.bg_shift_pat_lo & 0xff00) | nes.ppu.bg_next_tile_lsb as u16;
+    nes.ppu.bg_shift_pat_hi = (nes.ppu.bg_shift_pat_hi & 0xff00) | nes.ppu.bg_next_tile_msb as u16;
+    nes.ppu.bg_shift_att_hi = (nes.ppu.bg_shift_att_hi & 0xff00) | if nes.ppu.bg_next_tile_attr & 0b01 != 0 { 0xff } else { 0x00 };
+    nes.ppu.bg_shift_att_hi = (nes.ppu.bg_shift_att_lo & 0xff00) | if nes.ppu.bg_next_tile_attr & 0b10 != 0 { 0xff } else { 0x00 };
+}
+
+fn update_shifters(nes: &mut Nes) {
+    if nes.ppu.reg_mask.render_bg_enabled() {
+        nes.ppu.bg_shift_pat_lo <<= 1;
+        nes.ppu.bg_shift_pat_hi <<= 1;
+        nes.ppu.bg_shift_att_lo <<= 1;
+        nes.ppu.bg_shift_att_hi <<= 1;
+    }
+}

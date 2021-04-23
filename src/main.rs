@@ -19,6 +19,7 @@ mod mappers {
 }
 mod tests {
     pub mod cputest;
+    pub mod pputest;
 }
 mod events {
     pub mod drawevent;
@@ -73,6 +74,7 @@ pub fn main() {
 
                 
                 for evt in nes.get_draw_events() {
+                    
                     let (r, g, b) = evt.rgb;
                     let (x, y) = evt.position;
                     canvas.put_pixel(x as u32, y as u32, im::Rgba([r, g, b, 255]));
@@ -81,7 +83,6 @@ pub fn main() {
                 for _ in 0..10000 {
                     nes.clock();
                 }
-                
                 
                 //let end = PreciseTime::now();
                 //println!("\r{}", start.to(end).num_microseconds().unwrap());

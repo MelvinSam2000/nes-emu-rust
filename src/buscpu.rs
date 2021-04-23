@@ -1,14 +1,15 @@
 use crate::nes::Nes;
+use crate::ppu::ppu;
 
 pub struct BusCpu {
-    pub ram: [u8; 0x2000]
+    pub ram: [u8; 0x0800]
 }
 
 impl BusCpu {
     
     pub fn new() -> Self {
         return Self {
-            ram: [0; 0x2000]
+            ram: [0; 0x0800]
         };
     }
 }
@@ -17,14 +18,12 @@ pub fn read(nes: &mut Nes, addr: u16) -> u8 {
 
     match addr {
         0x0000 ..= 0x1fff => {
-            return nes.buscpu.ram[addr as usize];
+            return nes.buscpu.ram[addr as usize & 0x07ff];
         },
         0x2000 ..= 0x3fff => {
-            //println!("READING FROM PPU UNSUPPORTED");
-            return 0;
+            return ppu::read_ppu_reg(nes, addr & 0x2007);
         },
         0x4000 ..= 0x401f => {
-            //println!("READING FROM APU and IO UNSUPPORTED");
             return 0;
         },
         0x4020 ..= 0xffff => {
@@ -37,13 +36,12 @@ pub fn write(nes: &mut Nes, addr: u16, data: u8) {
 
     match addr {
         0x0000 ..= 0x1fff => {
-            nes.buscpu.ram[addr as usize] = data;
+            nes.buscpu.ram[addr as usize & 0x07ff] = data;
         },
         0x2000 ..= 0x3fff => {
-            println!("WRITING TO PPU UNSUPPORTED");
+            ppu::write_ppu_reg(nes, addr & 0x2007, data);
         },
         0x4000 ..= 0x401f => {
-            println!("WRITING TO APU and IO UNSUPPORTED");
         },
         0x4020 ..= 0xffff => {
             nes.cartridge.prg_write(addr, data);

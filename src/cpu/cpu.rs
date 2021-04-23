@@ -74,7 +74,7 @@ pub fn clock(nes: &mut Nes) {
 
     // fetch
     let opcode = read(nes, nes.cpu.pc);
-    nes.cpu.pc += 1;
+    nes.cpu.pc = nes.cpu.pc.wrapping_add(1);;
     // decode
     let decoded = decode::decode(opcode);
     nes.cpu.cycles = decoded.cycles;
@@ -89,12 +89,12 @@ pub fn irq(nes: &mut Nes) {
     if get_flag(nes, CpuFlag::I) {
         return;
     }
-    write(nes, nes.cpu.sp as u16 + 0x100, ((nes.cpu.pc >> 8) & 0x00ff) as u8);
-    nes.cpu.sp -= 1;
-    write(nes, nes.cpu.sp as u16 + 0x100, nes.cpu.pc as u8);
-    nes.cpu.sp -= 1;
-    write(nes, nes.cpu.sp as u16 + 0x0100, nes.cpu.status);
-    nes.cpu.sp -= 1;
+    write(nes, (nes.cpu.sp as u16).wrapping_add(0x0100), ((nes.cpu.pc >> 8) & 0x00ff) as u8);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
+    write(nes, (nes.cpu.sp as u16).wrapping_add(0x0100), nes.cpu.pc as u8);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
+    write(nes, (nes.cpu.sp as u16).wrapping_add(0x0100), nes.cpu.status);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
     
     set_flag(nes, CpuFlag::B, false);
     set_flag(nes, CpuFlag::I, true);
@@ -150,12 +150,13 @@ pub fn step(nes: &mut Nes) -> String {
 
 pub fn nmi(nes: &mut Nes) {
 
-    write(nes, nes.cpu.sp as u16 + 0x100, ((nes.cpu.pc >> 8) & 0x00ff) as u8);
-    nes.cpu.sp -= 1;
-    write(nes, nes.cpu.sp as u16 + 0x100, nes.cpu.pc as u8);
-    nes.cpu.sp -= 1;
-    write(nes, nes.cpu.sp as u16 + 0x0100, nes.cpu.status);
-    nes.cpu.sp -= 1;
+
+    write(nes, (nes.cpu.sp as u16).wrapping_add(0x0100), ((nes.cpu.pc >> 8) & 0x00ff) as u8);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
+    write(nes, (nes.cpu.sp as u16).wrapping_add(0x0100), nes.cpu.pc as u8);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
+    write(nes, (nes.cpu.sp as u16).wrapping_add(0x0100), nes.cpu.status);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
     
     set_flag(nes, CpuFlag::B, false);
     set_flag(nes, CpuFlag::I, true);
@@ -196,18 +197,18 @@ pub fn get_flag(nes: &Nes, flag: CpuFlag) -> bool {
 
 pub fn fetch_word(nes: &mut Nes, addr: u16) -> u16 {
     let lo = read(nes, addr) as u16;
-    let hi = read(nes, addr + 1) as u16;
+    let hi = read(nes, addr.wrapping_add(1)) as u16;
     return hi << 8 | lo;
 }
 
 pub fn pc_fetch_byte(nes: &mut Nes) -> u8 {
     let data = read(nes, nes.cpu.pc);
-    nes.cpu.pc += 1;
+    nes.cpu.pc = nes.cpu.pc.wrapping_add(1);
     return data;
 }
 
 pub fn pc_fetch_word(nes: &mut Nes) -> u16 {
     let data = fetch_word(nes, nes.cpu.pc);
-    nes.cpu.pc += 2;
+    nes.cpu.pc = nes.cpu.pc.wrapping_add(2);
     return data;
 }
