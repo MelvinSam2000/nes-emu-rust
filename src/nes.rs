@@ -7,6 +7,7 @@ use crate::ppu::ppu;
 use crate::buscpu::BusCpu;
 use crate::busppu::BusPpu;
 use crate::cartridge::Cartridge;
+use crate::joypad::*;
 use crate::events::drawevent::DrawEvent;
 
 pub struct Nes {
@@ -16,6 +17,7 @@ pub struct Nes {
     pub cartridge: Cartridge,
     pub buscpu: BusCpu,
     pub busppu: BusPpu,
+    pub joypad: Joypad,
     // io
     pub screen: [[(u8, u8, u8); 256]; 240],
     // helper
@@ -35,12 +37,13 @@ impl Nes {
         let ppu = Ppu::new();
         let buscpu = BusCpu::new();
         let busppu = BusPpu::new();
+        let joypad = Joypad::new();
 
         // I/O devices
         let screen: [[(u8, u8, u8); 256]; 240] = [[(0, 0, 0); 256]; 240];
 
         return Self {
-            cpu, ppu, cartridge, buscpu, busppu,
+            cpu, ppu, cartridge, buscpu, busppu, joypad,
             screen,
             clock_count: 0,
             eventbus: vec![],
@@ -102,6 +105,14 @@ impl Nes {
 
     pub fn screen_pixel(&self, i: u8, j: u8) -> (u8, u8, u8) {
         return self.screen[i as usize][j as usize];
+    }
+
+    pub fn press_btn(&mut self, btn: Button) {
+        self.joypad.press(btn);
+    }
+
+    pub fn release_btn(&mut self, btn: Button) {
+        self.joypad.release(btn);
     }
 
 }

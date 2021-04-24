@@ -25,6 +25,7 @@ mod events {
 mod cartridge;
 mod buscpu;
 mod busppu;
+mod joypad;
 
 extern crate image as im;
 extern crate piston_window;
@@ -46,7 +47,7 @@ pub fn main() {
         .exit_on_esc(true)
         .build()
         .unwrap();
-    window.set_event_settings(EventSettings::new().bench_mode(true));
+    window.set_event_settings(EventSettings::new().lazy(true));
 
     let mut canvas = im::ImageBuffer::new(WIDTH, HEIGHT);
     let mut texture_context = TextureContext {
@@ -62,6 +63,37 @@ pub fn main() {
     
 
     while let Some(e) = window.next() {
+
+        
+        if let Some(Button::Keyboard(key)) = e.press_args() {
+            match key {
+                Key::A =>       nes.press_btn(joypad::Button::BTN_A),
+                Key::S =>       nes.press_btn(joypad::Button::BTN_B),
+                Key::Space =>   nes.press_btn(joypad::Button::SELECT),
+                Key::Return =>  nes.press_btn(joypad::Button::START),
+                Key::Up =>      nes.press_btn(joypad::Button::UP),
+                Key::Down =>    nes.press_btn(joypad::Button::DOWN),
+                Key::Left =>    nes.press_btn(joypad::Button::LEFT),
+                Key::Right =>   nes.press_btn(joypad::Button::RIGHT),
+                _ => {}
+            }
+        };
+
+        if let Some(Button::Keyboard(key)) = e.release_args() {
+            match key {
+                Key::A =>       nes.release_btn(joypad::Button::BTN_A),
+                Key::S =>       nes.release_btn(joypad::Button::BTN_B),
+                Key::Space =>   nes.release_btn(joypad::Button::SELECT),
+                Key::Return =>  nes.release_btn(joypad::Button::START),
+                Key::Up =>      nes.release_btn(joypad::Button::UP),
+                Key::Down =>    nes.release_btn(joypad::Button::DOWN),
+                Key::Left =>    nes.release_btn(joypad::Button::LEFT),
+                Key::Right =>   nes.release_btn(joypad::Button::RIGHT),
+                _ => {}
+            }
+        };
+        
+        // Render
         if let Some(_) = e.render_args() {
             texture.update(&mut texture_context, &canvas).unwrap();
             window.draw_2d(&e, |c, g, device| {
@@ -79,6 +111,7 @@ pub fn main() {
                 for _ in 0..10000 {
                     nes.clock();
                 }
+                //nes.clock();
                 
                 //let end = PreciseTime::now();
                 //println!("\r{}", start.to(end).num_microseconds().unwrap());

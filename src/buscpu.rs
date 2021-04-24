@@ -23,6 +23,9 @@ pub fn read(nes: &mut Nes, addr: u16) -> u8 {
         0x2000 ..= 0x3fff => {
             return ppu::read_ppu_reg(nes, addr & 0x2007);
         },
+        0x4016 => {
+            return nes.joypad.read();
+        },
         0x4000 ..= 0x401f => {
             return 0;
         },
@@ -40,6 +43,9 @@ pub fn write(nes: &mut Nes, addr: u16, data: u8) {
         },
         0x2000 ..= 0x3fff => {
             ppu::write_ppu_reg(nes, addr & 0x2007, data);
+        },
+        0x4016 => {
+            nes.joypad.write(data);
         },
         0x4000 ..= 0x401f => {
         },
