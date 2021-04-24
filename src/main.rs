@@ -10,8 +10,6 @@ mod ppu {
     pub mod regcontrol;
     pub mod regmask;
     pub mod regstatus;
-    pub mod regaddrdata;
-    pub mod regloopy;
 }
 mod mappers {
     pub mod mapper;
@@ -34,8 +32,6 @@ extern crate time;
 
 use nes::Nes;
 use piston_window::*;
-use events::drawevent::DrawEvent;
-use time::PreciseTime;
 
 const WIDTH: u32 = 256;
 const HEIGHT: u32 = 240;

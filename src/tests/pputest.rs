@@ -27,6 +27,7 @@ mod pputest {
         assert_eq!(control.reg, 0b00000000);
     }
 
+    /*
     #[test]
     pub fn test_loopy_reg() {
         let mut loopy = regloopy::RegLoopy{ reg: 0x00 };
@@ -54,4 +55,5 @@ mod pputest {
         loopy.set_fine_y(0b101);
         assert_eq!(loopy.reg, 0b01011001_01010110);
     }
+    */
 }

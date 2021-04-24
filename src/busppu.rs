@@ -22,7 +22,7 @@ pub fn read(nes: &mut Nes, addr: u16) -> u8 {
         0x0000 ..= 0x1fff => {
             return nes.cartridge.chr_read(addr);
         },
-        0x2000 ..= 0x3eff => {
+        0x2000 ..= 0x2fff => {
             let mut mapped_addr = addr & 0x0fff;
             match nes.cartridge.mirroring {
                 Mirroring::HORIZONTAL => {
@@ -42,27 +42,13 @@ pub fn read(nes: &mut Nes, addr: u16) -> u8 {
             }
             return nes.busppu.vram[mapped_addr as usize];
         },
-        0x3f00 ..= 0x3f1f => {
-            return nes.busppu.palette[(addr & !0x3f00) as usize];
+        0x3f10 | 0x3f14 | 0x3f18 | 0x3f1c => {
+            let add_mirror = addr - 0x10;
+            return nes.busppu.palette[(add_mirror - 0x3f00) as usize];
         },
-        0x3f20 ..= 0x3fff => {
-            
-            let mut mapped = addr & 0x001f;
-            if mapped == 0x0010 {
-                mapped = 0x0000;
-            }
-            if mapped == 0x0014 {
-                mapped = 0x0004;
-            }
-            if mapped == 0x0018 {
-                mapped = 0x0008;
-            }
-            if mapped == 0x001C {
-                mapped = 0x000C;
-            }
-            
-            //let mapped = (addr - 0x3f20) & 0x001f;
-            return nes.busppu.palette[mapped as usize];
+        0x3f00 ..= 0x3fff => {
+            let addr_mirror = addr & 0x3f1f;
+            return nes.busppu.palette[(addr_mirror - 0x3f00) as usize];
         },
         _ => {
             return 0x00;
@@ -72,11 +58,12 @@ pub fn read(nes: &mut Nes, addr: u16) -> u8 {
 
 pub fn write(nes: &mut Nes, addr: u16, data: u8) {
 
+   
     match addr {
         0x0000 ..= 0x1fff => {
             nes.cartridge.chr_write(addr, data);
         },
-        0x2000 ..= 0x3eff => {
+        0x2000 ..= 0x2fff => {
             let mut mapped_addr = addr & 0x0fff;
             match nes.cartridge.mirroring {
                 Mirroring::HORIZONTAL => {
@@ -96,32 +83,15 @@ pub fn write(nes: &mut Nes, addr: u16, data: u8) {
             }
             nes.busppu.vram[mapped_addr as usize] = data;
         },
-        0x3f00 ..= 0x3f1f => {
-            nes.busppu.palette[(addr & !0x3f00) as usize] = data;
+        0x3f10 | 0x3f14 | 0x3f18 | 0x3f1c => {
+            let add_mirror = addr - 0x10;
+            nes.busppu.palette[(add_mirror - 0x3f00) as usize] = data;
         },
-        0x3f20 ..= 0x3fff => {
-            
-            let mut mapped = addr & 0x001f;
-            if mapped == 0x0010 {
-                mapped = 0x0000;
-            }
-            if mapped == 0x0014 {
-                mapped = 0x0004;
-            }
-            if mapped == 0x0018 {
-                mapped = 0x0008;
-            }
-            if mapped == 0x001C {
-                mapped = 0x000C;
-            }
-
-		    nes.busppu.palette[mapped as usize] = data;
-            
-            //let mapped = (addr - 0x3f20) & 0x001f;
-            //nes.busppu.palette[mapped as usize] = data;
+        0x3f00 ..= 0x3fff => {
+            let addr_mirror = addr & 0x3f1f;
+            nes.busppu.palette[(addr_mirror - 0x3f00) as usize] = data;
         },
         _ => {
-            return;
         }
     }
 }
