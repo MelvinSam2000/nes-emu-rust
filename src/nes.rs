@@ -1,3 +1,5 @@
+extern crate wasm_bindgen;
+
 use std::fs::read;
 
 use crate::cpu::cpu::Cpu;
@@ -28,7 +30,6 @@ pub struct Nes {
 impl Nes {
  
     // PUBLIC METHODS
-
     pub fn new() -> Self {
         
         // Create devices
@@ -58,10 +59,6 @@ impl Nes {
         if self.clock_count % 3 == 0 {
             cpu::clock(self);
         }
-        if self.clock_count % 100 == 0 {
-            //ppu::draw_chr(self, 0);
-            //ppu::get_palette_tbl(self);
-        }
         ppu::clock(self);
         self.clock_count = self.clock_count.wrapping_add(1);
     }
@@ -75,7 +72,11 @@ impl Nes {
         self.clock_count = self.clock_count.wrapping_add(1);
     }
 
-    pub fn load(&mut self, nes_file_path: String) {
+    pub fn load(&mut self, rom: Vec<u8>) {
+        self.cartridge.load_cartridge(rom);
+    }
+
+    pub fn load_file(&mut self, nes_file_path: String) {
         let file_bytes: Vec<u8> = match read(nes_file_path) {
             Err(_e) => vec![],
             Ok(v) => v
@@ -90,6 +91,7 @@ impl Nes {
         self.cpu.debug_ram.resize(0x10000, 0);
     }
 
+    /*
     pub fn get_draw_events(&mut self) -> Vec<DrawEvent> {
         if self.eventbus.len() > 0 {
             let out = self.eventbus.to_vec();
@@ -98,9 +100,15 @@ impl Nes {
         }
         return vec![];
     }
+    
 
     pub fn submit_draw_event(&mut self, evt: DrawEvent) {
         self.eventbus.push(evt);
+    }
+    */
+
+    pub fn get_screen_ptr(&self) -> *const [(u8, u8, u8); 256] {
+        return self.screen.as_ptr();
     }
 
     pub fn screen_pixel(&self, i: u8, j: u8) -> (u8, u8, u8) {

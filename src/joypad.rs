@@ -27,12 +27,12 @@ impl Joypad {
 
     pub fn press(&mut self, btn: Button) {
         self.status |= btn as u8;
-        //println!("REG: {:2X}", self.reg);
+        //println!("REG: {:2X}", self.status);
     }
 
     pub fn release(&mut self, btn: Button) {
         self.status &= !(btn as u8);
-        //println!("REG: {:2X}", self.reg);
+        //println!("REG: {:2X}", self.status);
     }
 
     pub fn read(&mut self) -> u8 {

@@ -109,7 +109,7 @@ mod cputest {
     #[test]
     pub fn test_final_nes() {
         let mut nes = Nes::new();
-        nes.load("games/nestest.nes".to_string());
+        nes.load_file("games/nestest.nes".to_string());
         nes.reset();
         nes.cpu.pc = 0xc000;
         cpu::step(&mut nes);

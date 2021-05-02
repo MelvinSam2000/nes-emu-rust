@@ -75,8 +75,8 @@ pub fn clock(nes: &mut Nes) {
     if nes.ppu.scan_line == 241 && nes.ppu.scan_cycle == 1 {
         nes.ppu.reg_status.set_vblank(true);
         if nes.ppu.reg_control.is_nmi_enabled() {
-            render(nes);
             cpu::nmi(nes);
+            render(nes);
         }
     }
 
@@ -167,6 +167,7 @@ pub fn write_ppu_reg(nes: &mut Nes, addr: u16, data: u8) {
             }
             nes.ppu.reg_addr_data.flip_latch();
             */
+            nes.ppu.addr_latch = !nes.ppu.addr_latch;
         },
         OAMADDR => {
 
@@ -209,8 +210,8 @@ pub fn render(nes: &mut Nes) {
     for i in 0x2000..=0x23bf {
         // get tile ID from vram
         let tile = read(nes, i);
-        let tile_col = i % 32;
-        let tile_row = i / 32;
+        let tile_col = (i - 0x2000) % 32;
+        let tile_row = (i - 0x2000) / 32;
         
         // Draw tile
         for row in 0..8 {
@@ -222,13 +223,20 @@ pub fn render(nes: &mut Nes) {
                 tile_msb >>= 1;
 
                 //let rgb = if pixel == 0 { (0, 0, 0) } else { (255, 255, 255) };
-                let rgb = PALETTE_TO_RGB[(read(nes, 0x3f01 + pixel as u16) % 64) as usize];
+                
+                //let rgb = PALETTE_TO_RGB[(read(nes, 0x3f01 + pixel as u16) % 64) as usize];
                 //let rgb = (0, 0, (((tile as u16)*101)  % 255) as u8);
+                let rgb = if rand::random() { (0, 0, 0) } else { (255, 255, 255) };
 
+                //nes.screen[(tile_row * 8 + row) as usize][(tile_col * 8 + (7 - col)) as usize] = rgb;
+
+                /*
                 nes.submit_draw_event(DrawEvent { position: (
                     (tile_col * 8 + (7 - col)) as u8, 
                     (tile_row * 8 + row) as u8,
-                ), rgb})
+                ), rgb});
+                */
+                
             }
         }
 
@@ -253,10 +261,12 @@ pub fn draw_chr(nes: &mut Nes, bank: u16) {
                     //let rgb = if pixel == 0 { (0, 0, 0) } else { (255, 255, 255) };
                     let rgb = PALETTE_TO_RGB[(read(nes, 0x3f00 + pixel as u16) % 64) as usize];
                     
+                    /*
                     nes.submit_draw_event(DrawEvent { position: (
                         (tile_y * 8 + (7 - col)) as u8, 
                         (tile_x * 8 + row) as u8,
-                    ), rgb})
+                    ), rgb});
+                    */
                 }
             }
         }

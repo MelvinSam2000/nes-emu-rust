@@ -4,10 +4,22 @@ version = "0.1.0"
 authors = ["MelvinSam2000 <melvinsamxd@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-rand = "0.8.3"
-piston_window = "0.93.0"
-image = "0.21.1"
-time = "*"
+#piston_window = "0.93.0"
+#image = "0.21.1"
+rand = "*"
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+serde = { version = "1.0", features = ["derive"] }
+
+#[profile.dev]
+#opt-level = 3
+
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "wasmnes"
+path = "src/lib.rs"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"

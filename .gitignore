@@ -3,3 +3,6 @@
 Cargo.lock
 /games
 /logs
+
+/www/node_modules
+/www/dist
