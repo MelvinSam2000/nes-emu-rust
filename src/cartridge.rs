@@ -66,21 +66,33 @@ impl Cartridge {
 
     pub fn prg_read(&mut self, addr: u16) -> u8 {
         let maddr = (self.mapper.read_prg)(self, addr);
+        if maddr > self.prgmem.len() as u16 {
+            return 0x00;
+        }
         return self.prgmem[maddr as usize];
     }
 
     pub fn prg_write(&mut self, addr: u16, data: u8) {
         let maddr = (self.mapper.write_prg)(self, addr);
+        if maddr > self.prgmem.len() as u16 {
+            return;
+        }
         self.prgmem[maddr as usize] = data;
     }
 
     pub fn chr_read(&mut self, addr: u16) -> u8 {
         let maddr = (self.mapper.read_chr)(self, addr);
+        if maddr > self.chrmem.len() as u16 {
+            return 0x00;
+        }
         return self.chrmem[maddr as usize];
     }
 
     pub fn chr_write(&mut self, addr: u16, data: u8) {
         let maddr = (self.mapper.write_chr)(self, addr);
+        if maddr > self.chrmem.len() as u16 {
+            return;
+        }
         self.chrmem[maddr as usize] = data;
     }
 }

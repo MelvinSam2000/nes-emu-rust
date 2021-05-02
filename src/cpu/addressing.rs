@@ -3,29 +3,30 @@ use crate::cpu::cpu;
 
 pub fn abs(nes: &mut Nes) {
     nes.cpu.addr = cpu::pc_fetch_word(nes);
-    nes.cpu.data = cpu::read(nes, nes.cpu.addr);
+    nes.cpu.is_imp = false;
 }
 
 pub fn abx(nes: &mut Nes) {
     abs(nes);
     nes.cpu.addr = nes.cpu.addr.wrapping_add(nes.cpu.x as u16);
-    nes.cpu.data = cpu::read(nes, nes.cpu.addr);
+    nes.cpu.is_imp = false;
 }
 
 pub fn aby(nes: &mut Nes) {
     abs(nes);
     nes.cpu.addr = nes.cpu.addr.wrapping_add(nes.cpu.y as u16);
-    nes.cpu.data = cpu::read(nes, nes.cpu.addr);
+    nes.cpu.is_imp = false;
 }
 
 pub fn imm(nes: &mut Nes) {
     nes.cpu.addr = nes.cpu.pc;
     nes.cpu.pc = nes.cpu.pc.wrapping_add(1);
-    nes.cpu.data = cpu::read(nes, nes.cpu.addr);
+    nes.cpu.is_imp = false;
 }
 
 pub fn imp(nes: &mut Nes) {
     nes.cpu.data = nes.cpu.ac;
+    nes.cpu.is_imp = true;
 }
 
 pub fn ind(nes: &mut Nes) {
@@ -38,7 +39,7 @@ pub fn ind(nes: &mut Nes) {
     } else {
         nes.cpu.addr = cpu::fetch_word(nes, ptr);
     }
-    nes.cpu.data = cpu::read(nes, nes.cpu.addr);
+    nes.cpu.is_imp = false;
 }
 
 pub fn idx(nes: &mut Nes) {
@@ -46,7 +47,7 @@ pub fn idx(nes: &mut Nes) {
     let lo = cpu::read(nes, ptr.wrapping_add(nes.cpu.x as u16) & 0x00ff) as u16;
     let hi = cpu::read(nes, ptr.wrapping_add(nes.cpu.x as u16).wrapping_add(1) & 0x00ff) as u16;
     nes.cpu.addr = (hi << 8) | lo;
-    nes.cpu.data = cpu::read(nes, nes.cpu.addr);
+    nes.cpu.is_imp = false;
 }
 
 pub fn idy(nes: &mut Nes) {
@@ -55,7 +56,7 @@ pub fn idy(nes: &mut Nes) {
     let hi = cpu::read(nes, ptr.wrapping_add(1) & 0x00ff) as u16;
     nes.cpu.addr = (hi << 8) | lo;
     nes.cpu.addr = nes.cpu.addr.wrapping_add(nes.cpu.y as u16);
-    nes.cpu.data = cpu::read(nes, nes.cpu.addr);
+    nes.cpu.is_imp = false;
 }
 
 pub fn rel(nes: &mut Nes) {
@@ -63,25 +64,25 @@ pub fn rel(nes: &mut Nes) {
     if nes.cpu.addr & 0x0080 != 0 {
         nes.cpu.addr |= 0xff00;
     }
-    nes.cpu.data = cpu::read(nes, nes.cpu.addr);
+    nes.cpu.is_imp = false;
 }
 
 pub fn zpg(nes: &mut Nes) {
     nes.cpu.addr = cpu::pc_fetch_byte(nes) as u16;
     nes.cpu.addr &= 0x00ff;
-    nes.cpu.data = cpu::read(nes, nes.cpu.addr);
+    nes.cpu.is_imp = false;
 }
 
 pub fn zpx(nes: &mut Nes) {
     nes.cpu.addr = (cpu::pc_fetch_byte(nes).wrapping_add(nes.cpu.x)) as u16;
     nes.cpu.addr &= 0x00ff;
-    nes.cpu.data = cpu::read(nes, nes.cpu.addr);
+    nes.cpu.is_imp = false;
 }
 
 pub fn zpy(nes: &mut Nes) {
     nes.cpu.addr = (cpu::pc_fetch_byte(nes).wrapping_add(nes.cpu.y)) as u16;
     nes.cpu.addr &= 0x00ff;
-    nes.cpu.data = cpu::read(nes, nes.cpu.addr);
+    nes.cpu.is_imp = false;
 }
 
 pub fn xxx(_nes: &mut Nes) {

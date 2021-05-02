@@ -18,6 +18,7 @@ pub struct Cpu {
     pub addr: u16,
     pub addr_mode: usize,
     pub data: u8,
+    pub is_imp: bool,
 
     // debug
     pub debug: bool,
@@ -50,6 +51,8 @@ impl Cpu {
             addr: 0x0000,
             addr_mode: 0x0000,
             data: 0x00,
+            is_imp: false,
+
             debug: false,
             debug_ram: vec![]
         }
@@ -164,6 +167,7 @@ pub fn nmi(nes: &mut Nes) {
     nes.cpu.pc = fetch_word(nes, 0xfffa);
 
     nes.cpu.cycles = 8;
+    
 }
 
 // HELPER METHODS
@@ -211,4 +215,10 @@ pub fn pc_fetch_word(nes: &mut Nes) -> u16 {
     let data = fetch_word(nes, nes.cpu.pc);
     nes.cpu.pc = nes.cpu.pc.wrapping_add(2);
     return data;
+}
+
+pub fn fetch_data(nes: &mut Nes) {
+    if !nes.cpu.is_imp {
+        nes.cpu.data = read(nes, nes.cpu.addr);
+    }
 }

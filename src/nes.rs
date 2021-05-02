@@ -58,10 +58,10 @@ impl Nes {
         if self.clock_count % 3 == 0 {
             cpu::clock(self);
         }
-        if self.clock_count % 100 == 0 {
+        //if self.clock_count % 100 == 0 {
             //ppu::draw_chr(self, 0);
             //ppu::get_palette_tbl(self);
-        }
+        //}
         ppu::clock(self);
         self.clock_count = self.clock_count.wrapping_add(1);
     }

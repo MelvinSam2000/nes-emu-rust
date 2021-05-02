@@ -33,6 +33,7 @@ extern crate time;
 
 use nes::Nes;
 use piston_window::*;
+use std::time::Instant;
 
 const WIDTH: u32 = 256;
 const HEIGHT: u32 = 240;
@@ -43,11 +44,24 @@ pub fn main() {
     nes.load(String::from("games/nestest.nes"));
     nes.reset();
 
+    //bench(&mut nes);
+    gui(&mut nes);
+}
+
+pub fn bench(nes: &mut Nes) {
+    let now = Instant::now();
+    for _ in 0..100000 {
+        nes.clock();
+    }
+    println!("Time elapsed: {} us", now.elapsed().as_micros());
+}
+
+pub fn gui(nes: &mut Nes) {
     let mut window: PistonWindow = WindowSettings::new("NES EMULATOR", (WIDTH, HEIGHT))
         .exit_on_esc(true)
         .build()
         .unwrap();
-    window.set_event_settings(EventSettings::new().lazy(true));
+    window.set_event_settings(EventSettings::new());
 
     let mut canvas = im::ImageBuffer::new(WIDTH, HEIGHT);
     let mut texture_context = TextureContext {

@@ -190,8 +190,8 @@ pub fn write_ppu_reg(nes: &mut Nes, addr: u16, data: u8) {
         PPUDATA => {
             write(nes, nes.ppu.reg_addr, data);
             // TODO
-            //nes.ppu.reg_addr = nes.ppu.reg_addr.wrapping_add(
-            //    if nes.ppu.reg_control.is_inc_mode() {32} else {1});
+            nes.ppu.reg_addr = nes.ppu.reg_addr.wrapping_add(
+                if nes.ppu.reg_control.is_inc_mode() {32} else {1});
         }
         _ => {
             return;
@@ -222,7 +222,7 @@ pub fn render(nes: &mut Nes) {
                 tile_msb >>= 1;
 
                 //let rgb = if pixel == 0 { (0, 0, 0) } else { (255, 255, 255) };
-                let rgb = PALETTE_TO_RGB[(read(nes, 0x3f01 + pixel as u16) % 64) as usize];
+                let rgb = PALETTE_TO_RGB[(read(nes, 0x3f00 + pixel as u16) % 64) as usize];
                 //let rgb = (0, 0, (((tile as u16)*101)  % 255) as u8);
 
                 nes.submit_draw_event(DrawEvent { position: (
