@@ -67,6 +67,7 @@ impl Cartridge {
     pub fn prg_read(&mut self, addr: u16) -> u8 {
         let maddr = (self.mapper.read_prg)(self, addr);
         if maddr > self.prgmem.len() as u16 {
+            panic!("INVALID MEM ACCESS!");
             return 0x00;
         }
         return self.prgmem[maddr as usize];
@@ -75,6 +76,7 @@ impl Cartridge {
     pub fn prg_write(&mut self, addr: u16, data: u8) {
         let maddr = (self.mapper.write_prg)(self, addr);
         if maddr > self.prgmem.len() as u16 {
+            panic!("INVALID MEM ACCESS!");
             return;
         }
         self.prgmem[maddr as usize] = data;
@@ -83,6 +85,7 @@ impl Cartridge {
     pub fn chr_read(&mut self, addr: u16) -> u8 {
         let maddr = (self.mapper.read_chr)(self, addr);
         if maddr > self.chrmem.len() as u16 {
+            panic!("INVALID MEM ACCESS!");
             return 0x00;
         }
         return self.chrmem[maddr as usize];
@@ -91,6 +94,7 @@ impl Cartridge {
     pub fn chr_write(&mut self, addr: u16, data: u8) {
         let maddr = (self.mapper.write_chr)(self, addr);
         if maddr > self.chrmem.len() as u16 {
+            panic!("INVALID MEM ACCESS!");
             return;
         }
         self.chrmem[maddr as usize] = data;

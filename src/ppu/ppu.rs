@@ -5,6 +5,7 @@ use crate::busppu;
 use crate::ppu::regcontrol::RegControl;
 use crate::ppu::regmask::RegMask;
 use crate::ppu::regstatus::RegStatus;
+use crate::ppu::regscroll::RegScroll;
 use crate::events::drawevent::DrawEvent;
 use crate::cpu::cpu;
 
@@ -17,9 +18,11 @@ pub struct Ppu {
     pub reg_control: RegControl,
     pub reg_mask: RegMask,
     pub reg_status: RegStatus,
+    pub reg_scroll: RegScroll,
     pub reg_addr: u16,
     pub reg_data: u8,
     pub addr_latch: bool,
+    pub reg_oam_addr: u8,
 }
 
 impl Ppu {
@@ -34,10 +37,13 @@ impl Ppu {
             reg_control: RegControl::new(),
             reg_mask: RegMask::new(),
             reg_status: RegStatus::new(),
+            reg_scroll: RegScroll::new(),
 
             reg_addr: 0x0000,
             reg_data: 0x00,
             addr_latch: true,
+
+            reg_oam_addr: 0x00,
         };
     }
 }
@@ -67,6 +73,7 @@ const OAMDATA: u16 = 0x2004;
 const PPUSCROLL: u16 = 0x2005;
 const PPUADDR: u16 = 0x2006;
 const PPUDATA: u16 = 0x2007;
+const OAMDMA: u16 = 0x4014;
 
 
 pub fn clock(nes: &mut Nes) {
@@ -74,8 +81,9 @@ pub fn clock(nes: &mut Nes) {
     // Enter VBLANK
     if nes.ppu.scan_line == 241 && nes.ppu.scan_cycle == 1 {
         nes.ppu.reg_status.set_vblank(true);
-        if nes.ppu.reg_control.is_nmi_enabled() {
-            render(nes);
+        render_background(nes);
+        render_sprites(nes);
+        if nes.ppu.reg_control.is_nmi_enabled() {    
             cpu::nmi(nes);
         }
     }
@@ -101,7 +109,7 @@ pub fn write(nes: &mut Nes, addr: u16, data: u8) {
 
 pub fn read_ppu_reg(nes: &mut Nes, addr: u16) -> u8 {
     match addr {
-        PPUCTRL | PPUMASK | PPUSCROLL | PPUADDR => {
+        PPUCTRL | PPUMASK | PPUSCROLL | PPUADDR | OAMADDR | OAMDMA => {
             // these registers are write only
             return 0x00;
         },
@@ -109,13 +117,11 @@ pub fn read_ppu_reg(nes: &mut Nes, addr: u16) -> u8 {
             let data = nes.ppu.reg_status.reg;
             nes.ppu.reg_status.set_vblank(false);
             nes.ppu.addr_latch = true;
+            nes.ppu.reg_scroll.latch = false;
             return data;
         },
-        OAMADDR => {
-
-        },
         OAMDATA => {
-
+            return nes.ppu.oam[nes.ppu.reg_oam_addr as usize];
         },
         PPUDATA => {
             
@@ -136,12 +142,11 @@ pub fn read_ppu_reg(nes: &mut Nes, addr: u16) -> u8 {
                     return 0x00;
                 }
             }
-        }
+        },
         _ => {
             return 0x00;
         }
     }
-    return 0x00;
 }
 
 pub fn write_ppu_reg(nes: &mut Nes, addr: u16, data: u8) {
@@ -157,22 +162,14 @@ pub fn write_ppu_reg(nes: &mut Nes, addr: u16, data: u8) {
             nes.ppu.reg_mask.reg = data;
         },
         PPUSCROLL => {
-            /*
-            if nes.ppu.addr_latch {
-                nes.ppu.fine_x = data & 0x07;
-                nes.ppu.loopy_t.set_coarse_x(data >> 3);
-            } else {
-                nes.ppu.loopy_t.set_fine_y(data & 0x07);
-                nes.ppu.loopy_t.set_coarse_x(data >> 3);
-            }
-            nes.ppu.reg_addr_data.flip_latch();
-            */
+            nes.ppu.reg_scroll.write(data);
         },
         OAMADDR => {
-
+            nes.ppu.reg_oam_addr = data;
         },
         OAMDATA => {
-
+            nes.ppu.oam[nes.ppu.reg_oam_addr as usize] = data;
+            nes.ppu.reg_oam_addr = nes.ppu.reg_oam_addr.wrapping_add(1);
         },
         PPUADDR => {
             if nes.ppu.addr_latch {
@@ -189,10 +186,16 @@ pub fn write_ppu_reg(nes: &mut Nes, addr: u16, data: u8) {
         },
         PPUDATA => {
             write(nes, nes.ppu.reg_addr, data);
-            // TODO
             nes.ppu.reg_addr = nes.ppu.reg_addr.wrapping_add(
                 if nes.ppu.reg_control.is_inc_mode() {32} else {1});
-        }
+        },
+        OAMDMA => {
+            let page: u16 = (data as u16) << 8;
+            for i in 0..256 {
+                nes.ppu.oam[nes.ppu.reg_oam_addr as usize] = cpu::read(nes, page + i);
+                nes.ppu.reg_oam_addr = nes.ppu.reg_oam_addr.wrapping_add(1);
+            }
+        },
         _ => {
             return;
         }
@@ -201,37 +204,97 @@ pub fn write_ppu_reg(nes: &mut Nes, addr: u16, data: u8) {
     
 }
 
-pub fn render(nes: &mut Nes) {
+pub fn render_background(nes: &mut Nes) {
 
-    let palette_bank = nes.ppu.reg_control.get_bg() as u16;
+    let chr_bank = nes.ppu.reg_control.get_bg() as u16;
 
     // First nametable
     for i in 0x2000..=0x23bf {
         // get tile ID from vram
         let tile = read(nes, i);
-        let tile_col = i % 32;
-        let tile_row = i / 32;
+        let tile_col = (i - 0x2000) % 32;
+        let tile_row = (i - 0x2000) / 32;
+
+        let attr_table_idx = tile_row / 4 * 8 +  tile_col / 4;
+        let attr_byte = read(nes, 0x23c0 + attr_table_idx);
+
+        let palette_idx = match (tile_col % 4 / 2, tile_row % 4 / 2) {
+            (0,0) => attr_byte & 0b11,
+            (1,0) => (attr_byte >> 2) & 0b11,
+            (0,1) => (attr_byte >> 4) & 0b11,
+            (1,1) => (attr_byte >> 6) & 0b11,
+            (_,_) => 0,
+        };
+        let palette_start = 4*palette_idx;
         
         // Draw tile
         for row in 0..8 {
-            let mut tile_lsb = read(nes, palette_bank*0x1000 + (tile as u16)*16 + row);
-            let mut tile_msb = read(nes, palette_bank*0x1000 + (tile as u16)*16 + row + 8);
+            let mut tile_lsb = read(nes, chr_bank*0x1000 + (tile as u16)*16 + row);
+            let mut tile_msb = read(nes, chr_bank*0x1000 + (tile as u16)*16 + row + 8);
             for col in 0..8 {
-                let pixel = (tile_msb & 0x01) + (tile_lsb & 0x01);
+                let pixel = ((tile_msb & 0x01) << 1) | (tile_lsb & 0x01);
                 tile_lsb >>= 1;
                 tile_msb >>= 1;
 
+                let palette_idx = match pixel {
+                    0 => read(nes, 0x3f00),
+                    1 | 2 | 3 => read(nes, 0x3f00 + palette_start as u16 + pixel as u16),
+                    _ => 0,
+                };
+
+                let rgb = PALETTE_TO_RGB[palette_idx as usize];
+
                 //let rgb = if pixel == 0 { (0, 0, 0) } else { (255, 255, 255) };
-                let rgb = PALETTE_TO_RGB[(read(nes, 0x3f00 + pixel as u16) % 64) as usize];
+                //let rgb = PALETTE_TO_RGB[(read(nes, 0x3f00 + pixel as u16) % 64) as usize];
                 //let rgb = (0, 0, (((tile as u16)*101)  % 255) as u8);
 
-                nes.submit_draw_event(DrawEvent { position: (
-                    (tile_col * 8 + (7 - col)) as u8, 
-                    (tile_row * 8 + row) as u8,
-                ), rgb})
+                nes.draw_pixel((tile_col * 8 + (7 - col)) as u8, (tile_row * 8 + row) as u8, rgb);
             }
         }
 
+    }
+}
+
+pub fn render_sprites(nes: &mut Nes) {
+
+    for i in (0..256).step_by(4).rev() {
+        let tile_id = nes.ppu.oam[i + 1] as u16;
+        let tile_x  = nes.ppu.oam[i + 3];
+        let tile_y  = nes.ppu.oam[i + 0];
+        let tile_attr = nes.ppu.oam[i + 2];
+
+        let flip_v = tile_attr >> 7 & 1 == 1;
+        let flip_h = tile_attr >> 6 & 1 == 1;
+        let palette_id = tile_attr & 0b11;
+
+        for y in 0..=7 {
+            let mut upper = read(nes, tile_id * 16 + y);
+            let mut lower = read(nes, tile_id * 16 + y + 8);
+            for x in (0..=7).rev() {
+                let value = (1 & lower) << 1 | (1 & upper);
+                upper >>= 1;
+                lower >>= 1;
+
+                if value == 0 {
+                    continue;
+                }
+                
+                let pal_pixel_id = 0x11 + palette_id*4 + value - 1;
+
+                //let rgb = (0, 0, (((value as u16)*101) % 255) as u8);
+                let rgb = PALETTE_TO_RGB[(read(nes, 0x3f00 + pal_pixel_id as u16) % 64) as usize];
+
+                let (pixel_x, pixel_y) = match (flip_h, flip_v) {
+                    (false, false) => (tile_x.wrapping_add(x), tile_y.wrapping_add(y as u8)),
+                    (true, false) => (tile_x.wrapping_add(7 - x), tile_y.wrapping_add(y as u8)),
+                    (false, true) => (tile_x.wrapping_add(x), tile_y.wrapping_add(7 - y as u8)),
+                    (true, true) => (tile_x.wrapping_add(7 - x), tile_y.wrapping_add(7 - y as u8)),
+                };
+                if pixel_y < 240 {
+                    nes.draw_pixel(pixel_x, pixel_y, rgb);
+                }
+            }
+        }
     }
 }
 
@@ -252,11 +315,7 @@ pub fn draw_chr(nes: &mut Nes, bank: u16) {
 
                     //let rgb = if pixel == 0 { (0, 0, 0) } else { (255, 255, 255) };
                     let rgb = PALETTE_TO_RGB[(read(nes, 0x3f00 + pixel as u16) % 64) as usize];
-                    
-                    nes.submit_draw_event(DrawEvent { position: (
-                        (tile_y * 8 + (7 - col)) as u8, 
-                        (tile_x * 8 + row) as u8,
-                    ), rgb})
+                    nes.draw_pixel((tile_y * 8 + (7 - col)) as u8, (tile_x * 8 + row) as u8, rgb);
                 }
             }
         }

@@ -10,6 +10,7 @@ mod ppu {
     pub mod regcontrol;
     pub mod regmask;
     pub mod regstatus;
+    pub mod regscroll;
 }
 mod mappers {
     pub mod mapper;
@@ -41,7 +42,8 @@ const HEIGHT: u32 = 240;
 pub fn main() {
 
     let mut nes = Nes::new();
-    nes.load(String::from("games/nestest.nes"));
+
+    nes.load(String::from("games/dk.nes"));
     nes.reset();
 
     //bench(&mut nes);
@@ -61,7 +63,7 @@ pub fn gui(nes: &mut Nes) {
         .exit_on_esc(true)
         .build()
         .unwrap();
-    window.set_event_settings(EventSettings::new());
+    window.set_event_settings(EventSettings::new().bench_mode(true));
 
     let mut canvas = im::ImageBuffer::new(WIDTH, HEIGHT);
     let mut texture_context = TextureContext {
@@ -114,6 +116,15 @@ pub fn gui(nes: &mut Nes) {
 
                 texture_context.encoder.flush(device);
 
+                /*
+                for x in 0..256 {
+                    for y in 0..240 {
+                        let (r, g, b) = nes.screen[y as usize][x as usize];
+                        canvas.put_pixel(x, y, im::Rgba([r, g, b, 255]))
+                    }
+                }
+                */
+
                 
                 for evt in nes.get_draw_events() {
                     
@@ -121,11 +132,8 @@ pub fn gui(nes: &mut Nes) {
                     let (x, y) = evt.position;
                     canvas.put_pixel(x as u32, y as u32, im::Rgba([r, g, b, 255]));
                 }
-                //let start = PreciseTime::now();
-                for _ in 0..10000 {
-                    nes.clock();
-                }
-                //nes.clock();
+                
+                
                 
                 //let end = PreciseTime::now();
                 //println!("\r{}", start.to(end).num_microseconds().unwrap());
@@ -133,6 +141,15 @@ pub fn gui(nes: &mut Nes) {
                 //clear([1.0; 4], g);
                 image(&texture, c.transform, g);
             });
+        }
+
+        if let Some(_) = e.update_args() {
+            //let start = PreciseTime::now();
+            for _ in 0..10000 {
+                //nes.clock_debug();
+                nes.clock();
+            }
+            //nes.clock();
         }
     }
 

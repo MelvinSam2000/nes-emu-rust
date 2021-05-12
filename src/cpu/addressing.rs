@@ -33,7 +33,7 @@ pub fn ind(nes: &mut Nes) {
     
     let ptr = cpu::pc_fetch_word(nes);
     // emulate page boundary bug or behave normally
-    if ptr & 0x00ff != 0 {
+    if ptr & 0x00ff == 0x00ff {
         nes.cpu.addr = cpu::read(nes, ptr) as u16;
         nes.cpu.addr |= (cpu::read(nes, ptr & 0xff00) as u16) << 8;
     } else {

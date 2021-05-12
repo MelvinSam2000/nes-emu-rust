@@ -23,23 +23,7 @@ pub fn read(nes: &mut Nes, addr: u16) -> u8 {
             return nes.cartridge.chr_read(addr);
         },
         0x2000 ..= 0x2fff => {
-            let mut mapped_addr = addr & 0x0fff;
-            match nes.cartridge.mirroring {
-                Mirroring::HORIZONTAL => {
-                    if mapped_addr >= 0x0400 && mapped_addr < 0x0800 {
-                        mapped_addr -= 0x0400;
-                    } else if mapped_addr >= 0x0c00 {
-                        mapped_addr -= 0x0400;
-                    }
-                },
-                Mirroring::VERTICAL => {
-                    if mapped_addr >= 0x0800 && mapped_addr < 0x0c00 {
-                        mapped_addr -= 0x0800;
-                    } else if mapped_addr >= 0x0c00 {
-                        mapped_addr -= 0x0800;
-                    }
-                }
-            }
+            let mapped_addr = mirror_vram_addr(nes, addr);
             return nes.busppu.vram[mapped_addr as usize];
         },
         0x3f10 | 0x3f14 | 0x3f18 | 0x3f1c => {
@@ -58,29 +42,12 @@ pub fn read(nes: &mut Nes, addr: u16) -> u8 {
 
 pub fn write(nes: &mut Nes, addr: u16, data: u8) {
 
-   
     match addr {
         0x0000 ..= 0x1fff => {
             nes.cartridge.chr_write(addr, data);
         },
         0x2000 ..= 0x2fff => {
-            let mut mapped_addr = addr & 0x0fff;
-            match nes.cartridge.mirroring {
-                Mirroring::HORIZONTAL => {
-                    if mapped_addr >= 0x0400 && mapped_addr < 0x0800 {
-                        mapped_addr -= 0x0400;
-                    } else if mapped_addr >= 0x0c00 {
-                        mapped_addr -= 0x0400;
-                    }
-                },
-                Mirroring::VERTICAL => {
-                    if mapped_addr >= 0x0800 && mapped_addr < 0x0c00 {
-                        mapped_addr -= 0x0800;
-                    } else if mapped_addr >= 0x0c00 {
-                        mapped_addr -= 0x0800;
-                    }
-                }
-            }
+            let mapped_addr = mirror_vram_addr(nes, addr);
             nes.busppu.vram[mapped_addr as usize] = data;
         },
         0x3f10 | 0x3f14 | 0x3f18 | 0x3f1c => {
@@ -94,4 +61,25 @@ pub fn write(nes: &mut Nes, addr: u16, data: u8) {
         _ => {
         }
     }
+}
+
+pub fn mirror_vram_addr(nes: &mut Nes, addr: u16) -> u16 {
+    let mut mapped_addr = addr & 0x0fff;
+    match nes.cartridge.mirroring {
+        Mirroring::HORIZONTAL => {
+            if mapped_addr >= 0x0400 && mapped_addr < 0x0800 {
+                mapped_addr -= 0x0400;
+            } else if mapped_addr >= 0x0c00 {
+                mapped_addr -= 0x0400;
+            }
+        },
+        Mirroring::VERTICAL => {
+            if mapped_addr >= 0x0800 && mapped_addr < 0x0c00 {
+                mapped_addr -= 0x0800;
+            } else if mapped_addr >= 0x0c00 {
+                mapped_addr -= 0x0800;
+            }
+        }
+    }
+    return mapped_addr;
 }

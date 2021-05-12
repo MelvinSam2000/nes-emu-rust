@@ -6,9 +6,7 @@ use crate::cpu::addressing;
 pub fn adc(nes: &mut Nes) {
     cpu::fetch_data(nes);
 
-    let mut temp: u16 = nes.cpu.ac.wrapping_add(nes.cpu.data) as u16;
-    temp = temp.wrapping_add(cpu::get_flag(nes, CpuFlag::C) as u16);
-
+    let temp: u16 = nes.cpu.ac as u16 + nes.cpu.data as u16 + cpu::get_flag(nes, CpuFlag::C) as u16;
     cpu::set_flag(nes, CpuFlag::C, temp > 255);
     cpu::set_flag(nes, CpuFlag::Z, (temp & 0x00ff) == 0);
     cpu::set_flag(nes, CpuFlag::V, (!(nes.cpu.ac as u16 ^ nes.cpu.data as u16) & (nes.cpu.ac as u16 ^ temp)) & 0x0080 != 0);
