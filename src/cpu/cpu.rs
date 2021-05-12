@@ -1,7 +1,7 @@
 use crate::nes::Nes;
 use crate::cpu::decode;
-use crate::cpu::addressing;
 use crate::buscpu;
+use crate::ppu::ppu;
 
 pub struct Cpu {
     
@@ -18,6 +18,7 @@ pub struct Cpu {
     pub addr: u16,
     pub addr_mode: usize,
     pub data: u8,
+    pub is_imp: bool,
 
     // debug
     pub debug: bool,
@@ -50,6 +51,8 @@ impl Cpu {
             addr: 0x0000,
             addr_mode: 0x0000,
             data: 0x00,
+            is_imp: false,
+
             debug: false,
             debug_ram: vec![]
         }
@@ -72,9 +75,15 @@ pub fn clock(nes: &mut Nes) {
         return;
     }
 
+    // Useful for PC cond breakpoint
+    //if nes.cpu.pc == 0xf216 && nes.ppu.reg_addr == 0x2085 && nes.cpu.ac == 0x62 {
+    //    println!("BREAKPOINT HIT");
+    //}
+
+
     // fetch
     let opcode = read(nes, nes.cpu.pc);
-    nes.cpu.pc = nes.cpu.pc.wrapping_add(1);;
+    nes.cpu.pc = nes.cpu.pc.wrapping_add(1);
     // decode
     let decoded = decode::decode(opcode);
     nes.cpu.cycles = decoded.cycles;
@@ -84,26 +93,6 @@ pub fn clock(nes: &mut Nes) {
     (decoded.instruction)(nes);
 }
 
-pub fn irq(nes: &mut Nes) {
-    
-    if get_flag(nes, CpuFlag::I) {
-        return;
-    }
-    write(nes, (nes.cpu.sp as u16).wrapping_add(0x0100), ((nes.cpu.pc >> 8) & 0x00ff) as u8);
-    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
-    write(nes, (nes.cpu.sp as u16).wrapping_add(0x0100), nes.cpu.pc as u8);
-    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
-    write(nes, (nes.cpu.sp as u16).wrapping_add(0x0100), nes.cpu.status);
-    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
-    
-    set_flag(nes, CpuFlag::B, false);
-    set_flag(nes, CpuFlag::I, true);
-
-    nes.cpu.pc = fetch_word(nes, 0xfffe);
-
-    nes.cpu.cycles = 7;
-
-}
 
 // For debugging
 pub fn step(nes: &mut Nes) -> String {
@@ -148,6 +137,27 @@ pub fn step(nes: &mut Nes) -> String {
     return asm_instruction;
 }
 
+pub fn irq(nes: &mut Nes) {
+    
+    if get_flag(nes, CpuFlag::I) {
+        return;
+    }
+    write(nes, (nes.cpu.sp as u16).wrapping_add(0x0100), ((nes.cpu.pc >> 8) & 0x00ff) as u8);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
+    write(nes, (nes.cpu.sp as u16).wrapping_add(0x0100), nes.cpu.pc as u8);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
+    write(nes, (nes.cpu.sp as u16).wrapping_add(0x0100), nes.cpu.status);
+    nes.cpu.sp = nes.cpu.sp.wrapping_sub(1);
+    
+    set_flag(nes, CpuFlag::B, false);
+    set_flag(nes, CpuFlag::I, true);
+
+    nes.cpu.pc = fetch_word(nes, 0xfffe);
+
+    nes.cpu.cycles = 7;
+
+}
+
 pub fn nmi(nes: &mut Nes) {
 
 
@@ -164,6 +174,7 @@ pub fn nmi(nes: &mut Nes) {
     nes.cpu.pc = fetch_word(nes, 0xfffa);
 
     nes.cpu.cycles = 8;
+    
 }
 
 // HELPER METHODS
@@ -211,4 +222,10 @@ pub fn pc_fetch_word(nes: &mut Nes) -> u16 {
     let data = fetch_word(nes, nes.cpu.pc);
     nes.cpu.pc = nes.cpu.pc.wrapping_add(2);
     return data;
+}
+
+pub fn fetch_data(nes: &mut Nes) {
+    if !nes.cpu.is_imp {
+        nes.cpu.data = read(nes, nes.cpu.addr);
+    }
 }

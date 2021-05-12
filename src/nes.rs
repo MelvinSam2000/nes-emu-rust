@@ -23,7 +23,7 @@ pub struct Nes {
     // io
     pub screen: [[(u8, u8, u8); 256]; 240],
     // helper
-    pub clock_count: u8,
+    pub clock_count: u64,
     pub eventbus: Vec<DrawEvent>,
 }
 
@@ -59,6 +59,11 @@ impl Nes {
         if self.clock_count % 3 == 0 {
             cpu::clock(self);
         }
+        if self.clock_count == 100000u64 {
+            //ppu::draw_chr(self, 1);
+            //ppu::get_palette_tbl(self);
+            self.clock_count = 0;
+        }
         ppu::clock(self);
         self.clock_count = self.clock_count.wrapping_add(1);
     }
@@ -91,7 +96,11 @@ impl Nes {
         self.cpu.debug_ram.resize(0x10000, 0);
     }
 
-    /*
+    pub fn draw_pixel(&mut self, x: u8, y: u8, rgb: (u8, u8, u8)) {
+        self.submit_draw_event(DrawEvent { position: (x, y), rgb});
+        //self.screen[y as usize][x as usize] = rgb;
+    }
+
     pub fn get_draw_events(&mut self) -> Vec<DrawEvent> {
         if self.eventbus.len() > 0 {
             let out = self.eventbus.to_vec();
@@ -105,7 +114,6 @@ impl Nes {
     pub fn submit_draw_event(&mut self, evt: DrawEvent) {
         self.eventbus.push(evt);
     }
-    */
 
     pub fn get_screen_ptr(&self) -> *const [(u8, u8, u8); 256] {
         return self.screen.as_ptr();

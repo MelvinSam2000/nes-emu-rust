@@ -30,6 +30,7 @@ mod joypad;
 
 extern crate image as im;
 extern crate piston_window;
+extern crate time;
 
 use nes::Nes;
 use piston_window::*;
@@ -41,12 +42,8 @@ const HEIGHT: u32 = 240;
 pub fn main() {
 
     let mut nes = Nes::new();
-<<<<<<< HEAD:src/main.rs.bak
-    nes.load_file(String::from("games/nestest.nes"));
-=======
 
     nes.load(String::from("games/dk.nes"));
->>>>>>> master:src/main.rs
     nes.reset();
 
     //bench(&mut nes);
@@ -66,11 +63,7 @@ pub fn gui(nes: &mut Nes) {
         .exit_on_esc(true)
         .build()
         .unwrap();
-<<<<<<< HEAD:src/main.rs.bak
-    window.set_event_settings(EventSettings::new());
-=======
     window.set_event_settings(EventSettings::new().bench_mode(true));
->>>>>>> master:src/main.rs
 
     let mut canvas = im::ImageBuffer::new(WIDTH, HEIGHT);
     let mut texture_context = TextureContext {
@@ -87,50 +80,6 @@ pub fn gui(nes: &mut Nes) {
 
     while let Some(e) = window.next() {
 
-        // Render
-        if let Some(_) = e.render_args() {
-            texture.update(&mut texture_context, &canvas).unwrap();
-            window.draw_2d(&e, |c, g, device| {
-
-                texture_context.encoder.flush(device);
-
-                /*
-                for y in 0..=255 {
-                    for x in 0..240 {
-                        let (r, g, b) = nes.screen_pixel(x, y);
-                        canvas.put_pixel(y as u32, x as u32, im::Rgba([r, g, b, 255]));
-                    }
-                }
-                */
-
-                /*
-                for evt in nes.get_draw_events() {
-                    
-                    let (r, g, b) = evt.rgb;
-                    let (x, y) = evt.position;
-                    canvas.put_pixel(x as u32, y as u32, im::Rgba([r, g, b, 255]));
-                }
-                */
-                
-                //let start = PreciseTime::now();
-                //for _ in 0..10000 {
-                //    nes.clock();
-                //}
-                //nes.clock();
-                
-                //let end = PreciseTime::now();
-                //println!("\r{}", start.to(end).num_microseconds().unwrap());
-                
-                //clear([1.0; 4], g);
-                image(&texture, c.transform, g);
-            });
-        }
-
-        if let Some(_) = e.update_args() {
-            for _ in 0..10000 {
-                nes.clock();
-            }
-        }
         
         if let Some(Button::Keyboard(key)) = e.press_args() {
             match key {
@@ -160,9 +109,6 @@ pub fn gui(nes: &mut Nes) {
             }
         };
         
-<<<<<<< HEAD:src/main.rs.bak
-        
-=======
         // Render
         if let Some(_) = e.render_args() {
             texture.update(&mut texture_context, &canvas).unwrap();
@@ -205,7 +151,6 @@ pub fn gui(nes: &mut Nes) {
             }
             //nes.clock();
         }
->>>>>>> master:src/main.rs
     }
 
 }

@@ -44,6 +44,9 @@ pub fn write(nes: &mut Nes, addr: u16, data: u8) {
         0x2000 ..= 0x3fff => {
             ppu::write_ppu_reg(nes, addr & 0x2007, data);
         },
+        0x4014 => { // OAM DMA
+            ppu::write_ppu_reg(nes, 0x4014, data);
+        }
         0x4016 => {
             nes.joypad.write(data);
         },
