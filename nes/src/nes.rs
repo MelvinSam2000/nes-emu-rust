@@ -1,5 +1,3 @@
-extern crate wasm_bindgen;
-
 use std::fs::read;
 
 use crate::cpu::cpu::Cpu;
@@ -22,6 +20,7 @@ pub struct Nes {
     pub joypad: Joypad,
     // io
     pub screen: [[(u8, u8, u8); 256]; 240],
+    pub screen_hook: fn(&mut Nes, u8, u8, (u8, u8, u8)),
     // helper
     pub clock_count: u64,
     pub eventbus: Vec<DrawEvent>,
@@ -46,6 +45,7 @@ impl Nes {
         return Self {
             cpu, ppu, cartridge, buscpu, busppu, joypad,
             screen,
+            screen_hook: Nes::sdl_draw,
             clock_count: 0,
             eventbus: vec![],
         };
@@ -83,7 +83,7 @@ impl Nes {
 
     pub fn load_file(&mut self, nes_file_path: String) {
         let file_bytes: Vec<u8> = match read(nes_file_path) {
-            Err(_e) => vec![],
+            Err(e) => panic!("COULD NOT READ FILE! {}", e),
             Ok(v) => v
         };
         self.cartridge.load_cartridge(file_bytes);
@@ -97,8 +97,12 @@ impl Nes {
     }
 
     pub fn draw_pixel(&mut self, x: u8, y: u8, rgb: (u8, u8, u8)) {
-        self.submit_draw_event(DrawEvent { position: (x, y), rgb});
-        //self.screen[y as usize][x as usize] = rgb;
+        (self.screen_hook)(self, x, y, rgb);
+    }
+
+    pub fn sdl_draw(&mut self, x: u8, y: u8, rgb: (u8, u8, u8)) {
+        //self.submit_draw_event(DrawEvent { position: (x, y), rgb});
+        self.screen[y as usize][x as usize] = rgb;
     }
 
     pub fn get_draw_events(&mut self) -> Vec<DrawEvent> {

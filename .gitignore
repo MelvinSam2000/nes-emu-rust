@@ -1,8 +1,8 @@
 .vscode
-/target
 Cargo.lock
+/target
 /games
 /logs
 
-/www/node_modules
-/www/dist
+/wasmnes/www/node_modules
+/wasmnes/www/dist

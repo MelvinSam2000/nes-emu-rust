@@ -1,37 +1,8 @@
-mod nes;
-mod cpu {
-    pub mod cpu;
-    pub mod instructions;
-    pub mod addressing;
-    pub mod decode;
-}
-mod ppu {
-    pub mod ppu;
-    pub mod regcontrol;
-    pub mod regmask;
-    pub mod regstatus;
-    pub mod regscroll;
-}
-mod mappers {
-    pub mod mapper;
-    pub mod nrom;
-}
-mod tests {
-    pub mod cputest;
-    pub mod pputest;
-}
-mod events {
-    pub mod drawevent;
-}
-mod cartridge;
-mod buscpu;
-mod busppu;
-mod joypad;
-
 extern crate image as im;
 extern crate piston_window;
 
-use nes::Nes;
+use nes::nes::Nes;
+use nes::joypad;
 use piston_window::*;
 use std::time::Instant;
 
@@ -41,12 +12,12 @@ const HEIGHT: u32 = 240;
 pub fn main() {
 
     let mut nes = Nes::new();
-<<<<<<< HEAD:src/main.rs.bak
-    nes.load_file(String::from("games/nestest.nes"));
-=======
 
-    nes.load(String::from("games/dk.nes"));
->>>>>>> master:src/main.rs
+    let game = String::from("dk.nes");
+    let game_dir = String::from("games/");
+    let game_path = format!("{}{}", game_dir, game);
+
+    nes.load_file(game_path);
     nes.reset();
 
     //bench(&mut nes);
@@ -66,11 +37,7 @@ pub fn gui(nes: &mut Nes) {
         .exit_on_esc(true)
         .build()
         .unwrap();
-<<<<<<< HEAD:src/main.rs.bak
-    window.set_event_settings(EventSettings::new());
-=======
-    window.set_event_settings(EventSettings::new().bench_mode(true));
->>>>>>> master:src/main.rs
+    window.set_event_settings(EventSettings::new()/*.bench_mode(true)*/);
 
     let mut canvas = im::ImageBuffer::new(WIDTH, HEIGHT);
     let mut texture_context = TextureContext {
@@ -87,50 +54,6 @@ pub fn gui(nes: &mut Nes) {
 
     while let Some(e) = window.next() {
 
-        // Render
-        if let Some(_) = e.render_args() {
-            texture.update(&mut texture_context, &canvas).unwrap();
-            window.draw_2d(&e, |c, g, device| {
-
-                texture_context.encoder.flush(device);
-
-                /*
-                for y in 0..=255 {
-                    for x in 0..240 {
-                        let (r, g, b) = nes.screen_pixel(x, y);
-                        canvas.put_pixel(y as u32, x as u32, im::Rgba([r, g, b, 255]));
-                    }
-                }
-                */
-
-                /*
-                for evt in nes.get_draw_events() {
-                    
-                    let (r, g, b) = evt.rgb;
-                    let (x, y) = evt.position;
-                    canvas.put_pixel(x as u32, y as u32, im::Rgba([r, g, b, 255]));
-                }
-                */
-                
-                //let start = PreciseTime::now();
-                //for _ in 0..10000 {
-                //    nes.clock();
-                //}
-                //nes.clock();
-                
-                //let end = PreciseTime::now();
-                //println!("\r{}", start.to(end).num_microseconds().unwrap());
-                
-                //clear([1.0; 4], g);
-                image(&texture, c.transform, g);
-            });
-        }
-
-        if let Some(_) = e.update_args() {
-            for _ in 0..10000 {
-                nes.clock();
-            }
-        }
         
         if let Some(Button::Keyboard(key)) = e.press_args() {
             match key {
@@ -160,34 +83,28 @@ pub fn gui(nes: &mut Nes) {
             }
         };
         
-<<<<<<< HEAD:src/main.rs.bak
-        
-=======
         // Render
         if let Some(_) = e.render_args() {
             texture.update(&mut texture_context, &canvas).unwrap();
             window.draw_2d(&e, |c, g, device| {
 
                 texture_context.encoder.flush(device);
-
-                /*
+                
                 for x in 0..256 {
                     for y in 0..240 {
                         let (r, g, b) = nes.screen[y as usize][x as usize];
-                        canvas.put_pixel(x, y, im::Rgba([r, g, b, 255]))
+                        canvas.put_pixel(x, y, im::Rgba([r, g, b, 255]));
                     }
                 }
-                */
-
                 
+                /*
                 for evt in nes.get_draw_events() {
                     
                     let (r, g, b) = evt.rgb;
                     let (x, y) = evt.position;
                     canvas.put_pixel(x as u32, y as u32, im::Rgba([r, g, b, 255]));
                 }
-                
-                
+                */
                 
                 //let end = PreciseTime::now();
                 //println!("\r{}", start.to(end).num_microseconds().unwrap());
@@ -205,7 +122,6 @@ pub fn gui(nes: &mut Nes) {
             }
             //nes.clock();
         }
->>>>>>> master:src/main.rs
     }
 
 }

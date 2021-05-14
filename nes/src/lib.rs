@@ -1,30 +1,30 @@
-mod nes;
-mod cpu {
+pub mod nes;
+pub mod cpu {
     pub mod cpu;
     pub mod instructions;
     pub mod addressing;
     pub mod decode;
 }
-mod ppu {
+pub mod ppu {
     pub mod ppu;
     pub mod regcontrol;
     pub mod regmask;
     pub mod regstatus;
+    pub mod regscroll;
 }
-mod mappers {
+pub mod mappers {
     pub mod mapper;
     pub mod nrom;
 }
-mod tests {
+pub mod tests {
     pub mod cputest;
     pub mod pputest;
     pub mod nesbench;
 }
-mod events {
+pub mod events {
     pub mod drawevent;
 }
-mod cartridge;
-mod buscpu;
-mod busppu;
-mod joypad;
-mod wasmnes;
+pub mod cartridge;
+pub mod buscpu;
+pub mod busppu;
+pub mod joypad;

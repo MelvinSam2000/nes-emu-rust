@@ -6,7 +6,6 @@ use crate::ppu::regcontrol::RegControl;
 use crate::ppu::regmask::RegMask;
 use crate::ppu::regstatus::RegStatus;
 use crate::ppu::regscroll::RegScroll;
-use crate::events::drawevent::DrawEvent;
 use crate::cpu::cpu;
 
 pub struct Ppu {
@@ -247,7 +246,7 @@ pub fn render_background(nes: &mut Nes) {
                 //let rgb = if pixel == 0 { (0, 0, 0) } else { (255, 255, 255) };
                 //let rgb = PALETTE_TO_RGB[(read(nes, 0x3f00 + pixel as u16) % 64) as usize];
                 //let rgb = (0, 0, (((tile as u16)*101)  % 255) as u8);
-                let rgb = if rand::random() { (0, 0, 0) } else { (255, 255, 255) };
+                //let rgb = if rand::random() { (0, 0, 0) } else { (255, 0, 0) };
 
                 //nes.screen[(tile_row * 8 + row) as usize][(tile_col * 8 + (7 - col)) as usize] = rgb;
 

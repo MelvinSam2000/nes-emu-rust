@@ -1,0 +1,13 @@
+[package]
+name = "piston"
+version = "0.1.0"
+authors = ["MelvinSam2000 <melvinsamxd@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nes = { path = "../nes" }
+piston_window = "0.93.0"
+image = "0.21.1"
+rand = "*"

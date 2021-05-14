@@ -1,0 +1,25 @@
+[package]
+name = "wasmnes"
+version = "0.1.0"
+authors = ["MelvinSam2000 <melvinsamxd@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nes = { path = "../nes" }
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+serde = { version = "1.0", features = ["derive"] }
+web-sys = { version = "*", features = [
+    "ImageData", 
+    "CanvasRenderingContext2d", 
+    "Window",
+    "Document",
+    "HtmlCanvasElement"
+] }
+console_error_panic_hook = "*"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "wasmnes"
+path = "src/wasmnes.rs"

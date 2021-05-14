@@ -1,25 +1,6 @@
-[package]
-name = "nes_emulator"
-version = "0.1.0"
-authors = ["MelvinSam2000 <melvinsamxd@gmail.com>"]
-edition = "2018"
-
-[dependencies]
-piston_window = "0.93.0"
-image = "0.21.1"
-rand = "*"
-wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
-serde = { version = "1.0", features = ["derive"] }
-
-#[profile.dev]
-#opt-level = 3
-
-
-[lib]
-crate-type = ["cdylib", "rlib"]
-name = "wasmnes"
-path = "src/lib.rs"
-
-[[bin]]
-name = "main"
-path = "src/main.rs"
+[workspace]
+members = [
+    "nes",
+    "piston",
+    "wasmnes"
+]
