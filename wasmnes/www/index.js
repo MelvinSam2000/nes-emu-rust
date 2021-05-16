@@ -12,6 +12,7 @@ romreader.addEventListener("change", () => {
     reader.onload = (e) => {
         const arraybuffer = e.target.result;
         const bytearray = new Uint8Array(arraybuffer);
+        paused = true;
         nes.load(bytearray);
         nes.reset();
         paused = false;
@@ -23,7 +24,6 @@ function render() {
 
     let image_data = ctx.getImageData(0, 0, canvas.width, canvas.height);
     let pixels = image_data.data;
-    console.log(image_data.height);
 
     for (let x = 0; x < 256; x++) {
         for (let y = 0; y < 240; y++) {
@@ -74,9 +74,14 @@ setInterval(() => {
 
 setInterval(() => {
     if (!paused) {
-        for (let i = 0; i < 20000; i++) {
-            nes.clock();
-        }  
+        try {
+            for (let i = 0; i < 40000; i++) {
+                nes.clock();
+            }  
+        } catch(e) {
+            paused = true;
+            console.log(e);
+        }
     }
-}, 1);
+}, 3);
 

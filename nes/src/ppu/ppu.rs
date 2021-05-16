@@ -1,5 +1,3 @@
-extern crate rand;
-
 use crate::nes::Nes;
 use crate::busppu;
 use crate::ppu::regcontrol::RegControl;
@@ -190,6 +188,7 @@ pub fn write_ppu_reg(nes: &mut Nes, addr: u16, data: u8) {
         },
         OAMDMA => {
             let page: u16 = (data as u16) << 8;
+            nes.cpu.cycles = 0xff;
             for i in 0..256 {
                 nes.ppu.oam[nes.ppu.reg_oam_addr as usize] = cpu::read(nes, page + i);
                 nes.ppu.reg_oam_addr = nes.ppu.reg_oam_addr.wrapping_add(1);

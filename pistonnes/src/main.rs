@@ -13,7 +13,7 @@ pub fn main() {
 
     let mut nes = Nes::new();
 
-    let game = String::from("dk.nes");
+    let game = String::from("contra.nes");
     let game_dir = String::from("games/");
     let game_path = format!("{}{}", game_dir, game);
 
@@ -117,8 +117,8 @@ pub fn gui(nes: &mut Nes) {
         if let Some(_) = e.update_args() {
             //let start = PreciseTime::now();
             for _ in 0..10000 {
-                //nes.clock_debug();
-                nes.clock();
+                nes.clock_debug();
+                //nes.clock();
             }
             //nes.clock();
         }

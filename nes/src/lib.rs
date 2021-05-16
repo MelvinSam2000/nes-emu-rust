@@ -15,6 +15,9 @@ pub mod ppu {
 pub mod mappers {
     pub mod mapper;
     pub mod nrom;
+    pub mod uxrom;
+    pub mod cnrom;
+    pub mod gxrom;
 }
 pub mod tests {
     pub mod cputest;

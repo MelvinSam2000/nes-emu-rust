@@ -5,8 +5,15 @@
     <title>NES Emulator in Rust WASM</title>
   </head>
   <style>
+    body {
+      height: 100%;
+      background-color: rgb(8, 241, 144);
+      align-self: center;
+    }
     #canvas {
       image-rendering: pixelated;
+      transform: scale(2);
+      transform-origin: top;
     }
   </style>
   <body>
@@ -14,6 +21,7 @@
     <script src="./bootstrap.js"></script>
     <input id="rom" type="file">
     <canvas id="canvas" height="240" width="256"></canvas>
+
     
   </body>
 </html>
