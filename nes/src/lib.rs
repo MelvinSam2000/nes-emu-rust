@@ -12,6 +12,11 @@ pub mod ppu {
     pub mod regstatus;
     pub mod regscroll;
 }
+pub mod apu {
+    pub mod apu;
+    pub mod pulsechannel;
+    pub mod trianglechannel;
+}
 pub mod mappers {
     pub mod mapper;
     pub mod nrom;
@@ -23,9 +28,6 @@ pub mod tests {
     pub mod cputest;
     pub mod pputest;
     pub mod nesbench;
-}
-pub mod events {
-    pub mod drawevent;
 }
 pub mod cartridge;
 pub mod buscpu;

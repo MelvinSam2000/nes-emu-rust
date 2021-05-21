@@ -13,8 +13,8 @@ pub fn main() {
 
     let mut nes = Nes::new();
 
-    let game = String::from("contra.nes");
-    let game_dir = String::from("games/");
+    let game = String::from("apu_scale.nes");
+    let game_dir = String::from("nes_scripts/");
     let game_path = format!("{}{}", game_dir, game);
 
     nes.load_file(game_path);
@@ -97,15 +97,6 @@ pub fn gui(nes: &mut Nes) {
                     }
                 }
                 
-                /*
-                for evt in nes.get_draw_events() {
-                    
-                    let (r, g, b) = evt.rgb;
-                    let (x, y) = evt.position;
-                    canvas.put_pixel(x as u32, y as u32, im::Rgba([r, g, b, 255]));
-                }
-                */
-                
                 //let end = PreciseTime::now();
                 //println!("\r{}", start.to(end).num_microseconds().unwrap());
                 
@@ -117,9 +108,14 @@ pub fn gui(nes: &mut Nes) {
         if let Some(_) = e.update_args() {
             //let start = PreciseTime::now();
             for _ in 0..10000 {
-                nes.clock_debug();
-                //nes.clock();
+                //nes.clock_debug();
+                nes.clock();
             }
+            let var = nes.apu.pulse1.get_frequency();
+            if var < 2000 {
+                println!("BREAKPOINT");
+            }
+            
             //nes.clock();
         }
     }

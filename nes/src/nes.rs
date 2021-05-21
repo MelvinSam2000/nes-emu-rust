@@ -4,16 +4,17 @@ use crate::cpu::cpu::Cpu;
 use crate::cpu::cpu;
 use crate::ppu::ppu::Ppu;
 use crate::ppu::ppu;
+use crate::apu::apu::Apu;
 use crate::buscpu::BusCpu;
 use crate::busppu::BusPpu;
 use crate::cartridge::Cartridge;
 use crate::joypad::*;
-use crate::events::drawevent::DrawEvent;
 
 pub struct Nes {
     // devices
     pub cpu: Cpu,
     pub ppu: Ppu,
+    pub apu: Apu,
     pub cartridge: Cartridge,
     pub buscpu: BusCpu,
     pub busppu: BusPpu,
@@ -23,7 +24,6 @@ pub struct Nes {
     pub screen_hook: fn(&mut Nes, u8, u8, (u8, u8, u8)),
     // helper
     pub clock_count: u64,
-    pub eventbus: Vec<DrawEvent>,
 }
 
 impl Nes {
@@ -35,6 +35,7 @@ impl Nes {
         let cartridge = Cartridge::new();
         let cpu = Cpu::new();
         let ppu = Ppu::new();
+        let apu = Apu::new();
         let buscpu = BusCpu::new();
         let busppu = BusPpu::new();
         let joypad = Joypad::new();
@@ -43,11 +44,10 @@ impl Nes {
         let screen: [[(u8, u8, u8); 256]; 240] = [[(0, 0, 0); 256]; 240];
 
         return Self {
-            cpu, ppu, cartridge, buscpu, busppu, joypad,
+            cpu, ppu, apu, cartridge, buscpu, busppu, joypad,
             screen,
             screen_hook: Nes::sdl_draw,
             clock_count: 0,
-            eventbus: vec![],
         };
     }
 
@@ -101,30 +101,7 @@ impl Nes {
     }
 
     pub fn sdl_draw(&mut self, x: u8, y: u8, rgb: (u8, u8, u8)) {
-        //self.submit_draw_event(DrawEvent { position: (x, y), rgb});
         self.screen[y as usize][x as usize] = rgb;
-    }
-
-    pub fn get_draw_events(&mut self) -> Vec<DrawEvent> {
-        if self.eventbus.len() > 0 {
-            let out = self.eventbus.to_vec();
-            self.eventbus = vec![];
-            return out;
-        }
-        return vec![];
-    }
-    
-
-    pub fn submit_draw_event(&mut self, evt: DrawEvent) {
-        self.eventbus.push(evt);
-    }
-
-    pub fn get_screen_ptr(&self) -> *const [(u8, u8, u8); 256] {
-        return self.screen.as_ptr();
-    }
-
-    pub fn screen_pixel(&self, i: u8, j: u8) -> (u8, u8, u8) {
-        return self.screen[i as usize][j as usize];
     }
 
     pub fn press_btn(&mut self, btn: Button) {

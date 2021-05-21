@@ -30,6 +30,14 @@ impl RegMask {
         return self.get_flag(Flag::s);
     }
 
+    pub fn get_color_emphasis(&self) -> (bool, bool, bool) {
+        return (
+            self.get_flag(Flag::R),
+            self.get_flag(Flag::G),
+            self.get_flag(Flag::B),
+        );
+    }
+
     fn set_flag(&mut self, flag: Flag, val: bool) {
         if val {
             self.reg |= flag as u8;

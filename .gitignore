@@ -6,3 +6,5 @@ Cargo.lock
 
 /wasmnes/www/node_modules
 /wasmnes/www/dist
+
+/nes_scripts/*.o

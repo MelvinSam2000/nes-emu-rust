@@ -1,5 +1,6 @@
 use crate::nes::Nes;
 use crate::ppu::ppu;
+use crate::apu::apu;
 
 pub struct BusCpu {
     pub ram: [u8; 0x0800]
@@ -26,11 +27,14 @@ pub fn read(nes: &mut Nes, addr: u16) -> u8 {
         0x4016 => {
             return nes.joypad.read();
         },
-        0x4000 ..= 0x401f => {
-            return 0;
+        0x4000 ..= 0x4013 | 0x4015 => {
+            return apu::read(nes, addr);
         },
         0x4020 ..= 0xffff => {
             return nes.cartridge.prg_read(addr);
+        },
+        _ => {
+            return 0;
         }
     }
 }
@@ -50,10 +54,12 @@ pub fn write(nes: &mut Nes, addr: u16, data: u8) {
         0x4016 => {
             nes.joypad.write(data);
         },
-        0x4000 ..= 0x401f => {
+        0x4000 ..= 0x4013 | 0x4015 => {
+            apu::write(nes, addr, data);
         },
         0x4020 ..= 0xffff => {
             nes.cartridge.prg_write(addr, data);
-        }
+        },
+        _ => {}
     }
 }

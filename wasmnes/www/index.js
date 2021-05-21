@@ -1,4 +1,5 @@
 import * as wasm from "wasm-nes-emulator";
+import AudioEngine from "./audio-engine";
 
 let nes = new wasm.WasmNes();
 let canvas = document.getElementById('canvas');
@@ -6,6 +7,8 @@ let ctx = canvas.getContext('2d');
 let paused = true;
 
 let romreader = document.getElementById("rom");
+
+let audioEngine = new AudioEngine();
 
 romreader.addEventListener("change", () => {
     var reader = new FileReader();
@@ -16,6 +19,7 @@ romreader.addEventListener("change", () => {
         nes.load(bytearray);
         nes.reset();
         paused = false;
+        audioEngine.start();
     }
     reader.readAsArrayBuffer(romreader.files[0]);
 });
@@ -71,17 +75,22 @@ setInterval(() => {
     
 }, 1000 / 30);
 
-
-setInterval(() => {
+function update() {
     if (!paused) {
         try {
-            for (let i = 0; i < 40000; i++) {
+            for (let i = 0; i < 100000; i++) {
                 nes.clock();
+                let apu_code = nes.apu_check_updated();
+                if (apu_code != 0) {
+                    audioEngine.processApuCode(apu_code, nes.get_apu_config())
+                }
             }  
         } catch(e) {
             paused = true;
             console.log(e);
         }
     }
-}, 3);
+    requestAnimationFrame(update);
+}
 
+update();

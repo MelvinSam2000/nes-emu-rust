@@ -205,7 +205,6 @@ pub fn write_ppu_reg(nes: &mut Nes, addr: u16, data: u8) {
 pub fn render_background(nes: &mut Nes) {
 
     let chr_bank = nes.ppu.reg_control.get_bg() as u16;
-
     // First nametable
     for i in 0x2000..=0x23bf {
         // get tile ID from vram
