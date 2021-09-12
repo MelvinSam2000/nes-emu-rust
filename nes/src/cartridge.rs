@@ -83,8 +83,6 @@ impl Cartridge {
         for i in 0..chr_size as u64 {
             self.chrmem[i as usize] = hexdump[(prg_size + offset + i) as usize];
         }
-
-        
     }
 
     pub fn prg_read(&mut self, addr: u16) -> u8 {
