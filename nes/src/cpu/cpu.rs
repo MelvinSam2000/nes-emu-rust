@@ -1,7 +1,6 @@
 use crate::nes::Nes;
 use crate::cpu::decode;
 use crate::buscpu;
-use crate::ppu::ppu;
 
 pub struct Cpu {
     
@@ -39,7 +38,7 @@ pub enum CpuFlag {
 impl Cpu {
 
     pub fn new() -> Self {
-        return Self {
+        Self {
             pc: 0x0000,
             ac: 0x00,
             x: 0x00,
@@ -70,16 +69,11 @@ pub fn reset(nes: &mut Nes) {
 }
 
 pub fn clock(nes: &mut Nes) {
+    
     if nes.cpu.cycles > 0 {
         nes.cpu.cycles -= 1;
         return;
     }
-
-    // Useful for PC cond breakpoint
-    //if nes.cpu.pc == 0xf216 && nes.ppu.reg_addr == 0x2085 && nes.cpu.ac == 0x62 {
-    //    println!("BREAKPOINT HIT");
-    //}
-
 
     // fetch
     let opcode = read(nes, nes.cpu.pc);
@@ -134,7 +128,7 @@ pub fn step(nes: &mut Nes) -> String {
         a, x, y, p, sp
     ));
     asm_instruction = asm_instruction.replace("\"", "");
-    return asm_instruction;
+    asm_instruction
 }
 
 pub fn irq(nes: &mut Nes) {
@@ -183,7 +177,7 @@ pub fn read(nes: &mut Nes, addr: u16) -> u8 {
     if nes.cpu.debug {
         return nes.cpu.debug_ram[addr as usize];
     }
-    return buscpu::read(nes, addr);
+    buscpu::read(nes, addr)
 }
 
 pub fn write(nes: &mut Nes, addr: u16, data: u8) {
@@ -203,25 +197,25 @@ pub fn set_flag(nes: &mut Nes, flag: CpuFlag, val: bool) {
 }
 
 pub fn get_flag(nes: &Nes, flag: CpuFlag) -> bool {
-    return flag as u8 & nes.cpu.status != 0x00;
+    flag as u8 & nes.cpu.status != 0x00
 }
 
 pub fn fetch_word(nes: &mut Nes, addr: u16) -> u16 {
     let lo = read(nes, addr) as u16;
     let hi = read(nes, addr.wrapping_add(1)) as u16;
-    return hi << 8 | lo;
+    hi << 8 | lo
 }
 
 pub fn pc_fetch_byte(nes: &mut Nes) -> u8 {
     let data = read(nes, nes.cpu.pc);
     nes.cpu.pc = nes.cpu.pc.wrapping_add(1);
-    return data;
+    data
 }
 
 pub fn pc_fetch_word(nes: &mut Nes) -> u16 {
     let data = fetch_word(nes, nes.cpu.pc);
     nes.cpu.pc = nes.cpu.pc.wrapping_add(2);
-    return data;
+    data
 }
 
 pub fn fetch_data(nes: &mut Nes) {

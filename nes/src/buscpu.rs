@@ -1,3 +1,4 @@
+use crate::cartridge;
 use crate::nes::Nes;
 use crate::ppu::ppu;
 use crate::apu::apu;
@@ -31,7 +32,7 @@ pub fn read(nes: &mut Nes, addr: u16) -> u8 {
             return apu::read(nes, addr);
         },
         0x4020 ..= 0xffff => {
-            return nes.cartridge.prg_read(addr);
+            return cartridge::prg_read(nes, addr);
         },
         _ => {
             return 0;
@@ -58,7 +59,7 @@ pub fn write(nes: &mut Nes, addr: u16, data: u8) {
             apu::write(nes, addr, data);
         },
         0x4020 ..= 0xffff => {
-            nes.cartridge.prg_write(addr, data);
+            cartridge::prg_write(nes, addr, data);
         },
         _ => {}
     }

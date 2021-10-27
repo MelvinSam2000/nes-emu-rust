@@ -7,7 +7,7 @@ use crate::ppu::ppu;
 use crate::apu::apu::Apu;
 use crate::buscpu::BusCpu;
 use crate::busppu::BusPpu;
-use crate::cartridge::Cartridge;
+use crate::cartridge::{self, Cartridge};
 use crate::joypad::*;
 
 pub struct Nes {
@@ -78,15 +78,12 @@ impl Nes {
     }
 
     pub fn load(&mut self, rom: Vec<u8>) {
-        self.cartridge.load_cartridge(rom);
+        cartridge::load_cartridge(self, rom);
     }
 
     pub fn load_file(&mut self, nes_file_path: String) {
-        let file_bytes: Vec<u8> = match read(nes_file_path) {
-            Err(e) => panic!("COULD NOT READ FILE! {}", e),
-            Ok(v) => v
-        };
-        self.cartridge.load_cartridge(file_bytes);
+        let file_bytes: Vec<u8> = read(nes_file_path).expect("Could not read file!");
+        cartridge::load_cartridge(self, file_bytes);
     }
 
     // for running small programns, not from ines roms

@@ -1,5 +1,5 @@
 use crate::nes::Nes;
-use crate::cartridge::Mirroring;
+use crate::cartridge::{self, Mirroring};
 
 pub struct BusPpu {
     pub vram: [u8; 0x1000],
@@ -20,7 +20,7 @@ pub fn read(nes: &mut Nes, addr: u16) -> u8 {
 
     match addr {
         0x0000 ..= 0x1fff => {
-            return nes.cartridge.chr_read(addr);
+            return cartridge::chr_read(nes, addr);
         },
         0x2000 ..= 0x2fff => {
             let mapped_addr = mirror_vram_addr(nes, addr);
@@ -44,7 +44,7 @@ pub fn write(nes: &mut Nes, addr: u16, data: u8) {
 
     match addr {
         0x0000 ..= 0x1fff => {
-            nes.cartridge.chr_write(addr, data);
+            cartridge::chr_write(nes, addr, data);
         },
         0x2000 ..= 0x2fff => {
             let mapped_addr = mirror_vram_addr(nes, addr);

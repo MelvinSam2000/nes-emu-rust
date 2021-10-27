@@ -267,7 +267,7 @@ pub fn decode(opcode: u8) -> DecodedOpcode {
 
 // wrapper to remove function overhead from decode table
 fn wr(cycles: u8, bytes: u8, addr_mode: fn(&mut Nes), instruction: fn(&mut Nes), instruction_str: &'static str) -> DecodedOpcode {
-    return DecodedOpcode {
+    DecodedOpcode {
         cycles, bytes, addr_mode, instruction, instruction_str
     }
 }
