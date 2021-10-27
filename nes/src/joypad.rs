@@ -4,6 +4,7 @@ pub struct Joypad {
     pub index: u8,
 }
 
+#[allow(non_camel_case_types)]
 pub enum Button {
     BTN_A = 1 << 0,
     BTN_B = 1 << 1,

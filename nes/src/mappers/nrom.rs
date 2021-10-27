@@ -3,6 +3,12 @@ use crate::mappers::mapper::MapperOperations;
 
 pub struct NROM;
 
+impl NROM {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
 impl MapperOperations for NROM {
 
     fn read_prg(cart: &mut Cartridge, addr: u16) -> Result<u8, ()> {

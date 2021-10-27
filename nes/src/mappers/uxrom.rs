@@ -1,17 +1,29 @@
 use crate::cartridge::Cartridge;
 
-use super::mapper::MapperOperations;
+use super::mapper::{Mapper, MapperOperations};
 
-pub struct UxROM;
+pub struct UxROM {
+    banksel: u8,
+}
+
+impl UxROM {
+    pub fn new() -> Self {
+        Self { 
+            banksel: 0 
+        }
+    }
+}
 
 
 impl MapperOperations for UxROM {
 
     fn read_prg(cart: &mut Cartridge, addr: u16) -> Result<u8, ()> {
-        let mapped_addr: u64;
+        let mut mapped_addr  = 0u64;
         match addr {
             0x8000..=0xbfff => {
-                mapped_addr = (cart.uxrom_banksel as u64)*0x4000 + (addr & 0x3fff) as u64;
+                if let Mapper::UxROM(uxrom) = &mut cart.mapper {
+                    mapped_addr = (uxrom.banksel as u64)*0x4000 + (addr & 0x3fff) as u64;
+                }
             },
             0xc000..=0xffff => {
                 let prgbank_size: u16 = cart.prg_banks as u16 - 1;
@@ -25,8 +37,11 @@ impl MapperOperations for UxROM {
     fn write_prg(cart: &mut Cartridge, addr: u16, data: u8) -> Result<(), ()> {
         match addr {
             0x8000..=0xffff => {
-                cart.uxrom_banksel = data & 0x0f;
-                Ok(())
+                if let Mapper::UxROM(uxrom) = &mut cart.mapper {
+                    uxrom.banksel = data & 0x0f;
+                    return Ok(());
+                }
+                Err(())
             },
             _ => Err(())
         }

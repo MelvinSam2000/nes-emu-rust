@@ -13,11 +13,6 @@ pub struct Cartridge {
     pub chr_banks: u8,
     pub mapper: Mapper,
     pub mirroring: Mirroring,
-
-    // extra mapper variables
-    pub uxrom_banksel: u8,
-    pub cnrom_banksel: u8,
-    pub gxrom_banksel: (u8, u8),
 }
 
 pub enum Mirroring {
@@ -35,10 +30,6 @@ impl Cartridge {
             chr_banks: 0,
             mapper: Mapper::NROM(NROM),
             mirroring: Mirroring::HORIZONTAL,
-
-            uxrom_banksel: 0,
-            cnrom_banksel: 0,
-            gxrom_banksel: (0, 0),
         }
     }
 }
@@ -67,10 +58,10 @@ pub fn load_cartridge(nes: &mut Nes, hexdump: Vec<u8>) {
     // choose mapper
     let mapper_id = (hexdump[0x7] & 0xf0) | ((hexdump[0x6] & 0xf0) >> 4);
     nes.cartridge.mapper = match mapper_id {
-        0 => Mapper::NROM(NROM),
-        2 => Mapper::UxROM(UxROM),
-        3 => Mapper::CNROM(CNROM),
-        66 => Mapper::GxROM(GxROM),
+        0 => Mapper::NROM(NROM::new()),
+        2 => Mapper::UxROM(UxROM::new()),
+        3 => Mapper::CNROM(CNROM::new()),
+        66 => Mapper::GxROM(GxROM::new()),
         _ => panic!("Mapper {} not supported yet...", mapper_id),
     };
 
