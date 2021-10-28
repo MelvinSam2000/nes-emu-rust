@@ -79,7 +79,8 @@ pub fn mirror_vram_addr(nes: &mut Nes, addr: u16) -> u16 {
             } else if mapped_addr >= 0x0c00 {
                 mapped_addr -= 0x0800;
             }
-        }
+        },
+        _ => {},
     }
     mapped_addr
 }

@@ -1,5 +1,6 @@
 use crate::mappers::mapper::Mapper;
 use crate::mappers::mapper::MapperOperations;
+use crate::mappers::mmc1::MMC1;
 use crate::mappers::nrom::NROM;
 use crate::mappers::uxrom::UxROM;
 use crate::mappers::cnrom::CNROM;
@@ -17,7 +18,9 @@ pub struct Cartridge {
 
 pub enum Mirroring {
     HORIZONTAL,
-    VERTICAL
+    VERTICAL,
+    ONESCREEN_LO,
+    ONESCREEN_HI,
 }
 
 impl Cartridge {
@@ -59,6 +62,7 @@ pub fn load_cartridge(nes: &mut Nes, hexdump: Vec<u8>) {
     let mapper_id = (hexdump[0x7] & 0xf0) | ((hexdump[0x6] & 0xf0) >> 4);
     nes.cartridge.mapper = match mapper_id {
         0 => Mapper::NROM(NROM::new()),
+        1 => Mapper::MMC1(MMC1::new()),
         2 => Mapper::UxROM(UxROM::new()),
         3 => Mapper::CNROM(CNROM::new()),
         66 => Mapper::GxROM(GxROM::new()),

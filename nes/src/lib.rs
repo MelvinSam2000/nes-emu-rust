@@ -20,6 +20,7 @@ pub mod apu {
 pub mod mappers {
     pub mod mapper;
     pub mod nrom;
+    pub mod mmc1;
     pub mod uxrom;
     pub mod cnrom;
     pub mod gxrom;
