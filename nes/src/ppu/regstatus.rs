@@ -1,24 +1,29 @@
-pub struct RegStatus {
-    pub reg: u8
-}
+use bitflags::bitflags;
 
-enum Flag {
-    O = 1 << 5,     // sprite overflow
-    S = 1 << 6,     // sprite 0 hit
-    V = 1 << 7,     // vblank
+bitflags! {
+    pub struct RegStatus: u8 {
+        const O = 1 << 5;     // sprite overflow
+        const S = 1 << 6;     // sprite 0 hit
+        const V = 1 << 7;     // vblank
+    }
 }
 
 impl RegStatus {
 
     pub fn new() -> Self {
-        return Self {
-            reg: 0x00
-        };
+        RegStatus::from_bits_truncate(0)
+    }
+
+    pub fn get_bits(&self) -> u8 {
+        self.bits
     }
 
     pub fn set_vblank(&mut self, val: bool){
-        self.set_flag(Flag::V, val);
+        self.set(RegStatus::V, val);
     }
+
+    /*
+    
 
     pub fn get_vblank(&mut self) -> bool {
         return self.get_flag(Flag::V);
@@ -35,6 +40,7 @@ impl RegStatus {
     fn get_flag(&self, flag: Flag) -> bool {
         return flag as u8 & self.reg != 0x00;
     }
+    */
 }
 
 

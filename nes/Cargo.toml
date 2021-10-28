@@ -10,3 +10,6 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 name = "nes"
 path = "src/lib.rs"
+
+[dependencies]
+bitflags = "1.3.2"

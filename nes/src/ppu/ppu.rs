@@ -111,7 +111,7 @@ pub fn read_ppu_reg(nes: &mut Nes, addr: u16) -> u8 {
             return 0x00;
         },
         PPUSTATUS => {
-            let data = nes.ppu.reg_status.reg;
+            let data = nes.ppu.reg_status.get_bits();
             nes.ppu.reg_status.set_vblank(false);
             nes.ppu.addr_latch = true;
             nes.ppu.reg_scroll.latch = false;
@@ -153,10 +153,10 @@ pub fn write_ppu_reg(nes: &mut Nes, addr: u16, data: u8) {
             return;
         },
         PPUCTRL => {
-            nes.ppu.reg_control.reg = data;
+            nes.ppu.reg_control.update(data);
         },
         PPUMASK => {
-            nes.ppu.reg_mask.reg = data;
+            nes.ppu.reg_mask.update(data);
         },
         PPUSCROLL => {
             nes.ppu.reg_scroll.write(data);

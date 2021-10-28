@@ -1,36 +1,46 @@
-pub struct RegControl {
-    pub reg: u8
-}
+#![allow(non_upper_case_globals)]
 
-enum Flag {
-    Nx = 1 << 0,   // Nametable select (x)
-    Ny = 1 << 1,   // Nametable select (y)
-    I = 1 << 2,     // Increment mode
-    S = 1 << 3,     // Sprite tile select
-    B = 1 << 4,     // Background tile select
-    H = 1 << 5,     // Sprite height
-    P = 1 << 6,     // PPU master/slave
-    V = 1 << 7,     // NMI enable
+use bitflags::bitflags;
+
+bitflags! {
+    pub struct RegControl: u8 {
+        const Nx = 1 << 0;   // Nametable select (x)
+        const Ny = 1 << 1;   // Nametable select (y)
+        const I = 1 << 2;     // Increment mode
+        const S = 1 << 3;     // Sprite tile select
+        const B = 1 << 4;     // Background tile select
+        const H = 1 << 5;     // Sprite height
+        const P = 1 << 6;     // PPU master/slave
+        const V = 1 << 7;     // NMI enable
+    }
 }
 
 impl RegControl {
 
     pub fn new() -> Self {
-        return Self {
-            reg: 0x00
-        };
+        RegControl::from_bits_truncate(0)
     }
 
+    pub fn update(&mut self, data: u8) {
+        self.bits = data;
+    } 
+
     pub fn is_nmi_enabled(&mut self) -> bool {
-        return self.get_flag(Flag::V);
-    }
-    
-    pub fn set_nmi_enabled(&mut self, value: bool) {
-        self.set_flag(Flag::V, value);
+        self.contains(RegControl::V)
     }
 
     pub fn is_inc_mode(&mut self) -> bool {
-        return self.get_flag(Flag::I);
+        self.contains(RegControl::I)
+    }
+
+    pub fn get_bg(&self) -> bool {
+        self.contains(RegControl::B)
+    }
+
+    /*
+    
+    pub fn set_nmi_enabled(&mut self, value: bool) {
+        self.set_flag(Flag::V, value);
     }
 
     pub fn get_name_x(&self) -> bool {
@@ -68,6 +78,7 @@ impl RegControl {
     fn get_flag(&self, flag: Flag) -> bool {
         return flag as u8 & self.reg != 0x00;
     }
+    */
 }
 
 

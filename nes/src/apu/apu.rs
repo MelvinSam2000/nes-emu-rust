@@ -14,6 +14,7 @@ pub struct Apu {
 }
 
 #[derive(Clone, Copy)]
+#[allow(non_camel_case_types)]
 pub enum ApuUpdateCode {
     NONE,
 
@@ -45,9 +46,9 @@ impl Apu {
     }
 }
 
-pub fn read(nes: &mut Nes, addr: u16) -> u8 {
+pub fn read(_nes: &mut Nes, _addr: u16) -> u8 {
     
-    match addr {
+    match _addr {
         // PULSE 1
         0x4000 => {
             
@@ -110,7 +111,6 @@ pub fn write(nes: &mut Nes, addr: u16, data: u8) {
         },
 
         // TRIANGLE
-
         0x4008 => {
             nes.apu.triangle.muted = data & 0b11000000 != 0;
             nes.apu.updated = ApuUpdateCode::TRIANGLE_MUTE;

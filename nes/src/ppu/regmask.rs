@@ -1,25 +1,32 @@
-pub struct RegMask {
-    pub reg: u8
-}
+#![allow(non_upper_case_globals)]
 
-enum Flag {
-    Gr = 1 << 0,    // Greyscale
-    m = 1 << 1,     // Background left column enable
-    M = 1 << 2,     // Sprite left column enable
-    b = 1 << 3,     // Background enable
-    s = 1 << 4,     // Sprite enable
-    R = 1 << 5,     // Color emphasis
-    G = 1 << 6,     // Color emphasis
-    B = 1 << 7,     // Color emphasis
+use bitflags::bitflags;
+
+bitflags! {
+    
+    pub struct RegMask: u8 {
+        
+        const Gr = 1 << 0;    // Greyscale
+        const m = 1 << 1;     // Background left column enable
+        const M = 1 << 2;     // Sprite left column enable
+        const b = 1 << 3;     // Background enable
+        const s = 1 << 4;     // Sprite enable
+        const R = 1 << 5;     // Color emphasis
+        const G = 1 << 6;     // Color emphasis
+        const B = 1 << 7;     // Color emphasis
+    }
 }
 
 impl RegMask {
 
     pub fn new() -> Self {
-        return Self {
-            reg: 0x00
-        };
+        RegMask::from_bits_truncate(0)
     }
+
+    pub fn update(&mut self, data: u8) {
+        self.bits = data;
+    }
+    /* 
 
     pub fn render_bg_enabled(&self) -> bool {
         // TODO: change later
@@ -49,6 +56,7 @@ impl RegMask {
     fn get_flag(&self, flag: Flag) -> bool {
         return flag as u8 & self.reg != 0x00;
     }
+    */
 }
 
 

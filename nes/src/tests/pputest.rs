@@ -1,7 +1,8 @@
 mod pputest {
 
-    use crate::ppu::*;
+    //use crate::ppu::*;
 
+    /* 
     #[test]
     pub fn test_control_reg() {
         
@@ -26,6 +27,7 @@ mod pputest {
         control.set_bg(false);
         assert_eq!(control.reg, 0b00000000);
     }
+    */
 
     /*
     #[test]

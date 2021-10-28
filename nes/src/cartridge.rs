@@ -80,18 +80,18 @@ pub fn load_cartridge(nes: &mut Nes, hexdump: Vec<u8>) {
 }
 
 pub fn prg_read(nes: &mut Nes, addr: u16) -> u8 {
-    Mapper::read_prg(&mut nes.cartridge, addr).expect("Read invalid region of PRG")
+    Mapper::read_prg(&mut nes.cartridge, addr).unwrap_or(0)
 }
 
 pub fn prg_write(nes: &mut Nes, addr: u16, data: u8) {
-    Mapper::write_prg(&mut nes.cartridge, addr, data).expect("Write invalid region of PRG")
+    Mapper::write_prg(&mut nes.cartridge, addr, data).unwrap_or(())
 }
 
 pub fn chr_read(nes: &mut Nes, addr: u16) -> u8 {
-    Mapper::read_chr(&mut nes.cartridge, addr).expect("Read invalid region of CHR")
+    Mapper::read_chr(&mut nes.cartridge, addr).unwrap_or(0)
 }
 
 pub fn chr_write(nes: &mut Nes, addr: u16, data: u8) {
-    Mapper::write_chr(&mut nes.cartridge, addr, data).expect("Write invalid region of CHR")
+    Mapper::write_chr(&mut nes.cartridge, addr, data).unwrap_or(())
 }
 

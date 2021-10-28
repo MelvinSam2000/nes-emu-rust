@@ -20,22 +20,22 @@ pub fn read(nes: &mut Nes, addr: u16) -> u8 {
 
     match addr {
         0x0000 ..= 0x1fff => {
-            return cartridge::chr_read(nes, addr);
+            cartridge::chr_read(nes, addr)
         },
         0x2000 ..= 0x2fff => {
             let mapped_addr = mirror_vram_addr(nes, addr);
-            return nes.busppu.vram[mapped_addr as usize];
+            nes.busppu.vram[mapped_addr as usize]
         },
         0x3f10 | 0x3f14 | 0x3f18 | 0x3f1c => {
             let add_mirror = addr - 0x10;
-            return nes.busppu.palette[(add_mirror - 0x3f00) as usize];
+            nes.busppu.palette[(add_mirror - 0x3f00) as usize]
         },
         0x3f00 ..= 0x3fff => {
             let addr_mirror = addr & 0x3f1f;
-            return nes.busppu.palette[(addr_mirror - 0x3f00) as usize];
+            nes.busppu.palette[(addr_mirror - 0x3f00) as usize]
         },
         _ => {
-            return 0x00;
+            0x00
         }
     }
 }
@@ -81,5 +81,5 @@ pub fn mirror_vram_addr(nes: &mut Nes, addr: u16) -> u16 {
             }
         }
     }
-    return mapped_addr;
+    mapped_addr
 }
